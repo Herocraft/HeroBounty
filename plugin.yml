@@ -1,0 +1,8 @@
+name: HeroBounty
+version: 1.00
+main: com.bukkit.dthielke.herobounty.HeroBountyPlugin
+description: Provides a bounty system with iConomy support
+commands:
+  bounty:
+    description:  Lists all HeroBounty commands 
+    usage: /<command> help
