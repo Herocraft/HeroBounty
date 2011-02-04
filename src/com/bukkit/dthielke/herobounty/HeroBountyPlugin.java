@@ -174,6 +174,7 @@ public class HeroBountyPlugin extends JavaPlugin {
         iConomy.db.set_balance(owner.getName(), balance - value);
         owner.sendMessage(COLOR1 + "Placed a bounty on " + COLOR2 + target.getName() + COLOR1 + "'s head for " + COLOR2 + award + iConomy.currency + COLOR1 + ".");
         owner.sendMessage(COLOR1 + "You have been charged a " + COLOR2 + fee + iConomy.currency + COLOR1 + " fee for posting a bounty.");
+        getServer().broadcastMessage(COLOR1 + "A new bounty has been placed for " + COLOR2 + award + iConomy.currency + COLOR1 + ".");
         
         saveData();
         
