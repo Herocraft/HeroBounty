@@ -1,9 +1,15 @@
 package com.bukkit.dthielke.herobounty;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
 public class Bounty implements Comparable<Bounty> {
     private String owner = "";
     private String target = "";
-    private String hunter = "";
+    private List<String> hunters = new ArrayList<String>();
+    private HashMap<String, Date> expirations = new HashMap<String, Date>();
     private int value = 0;
     private int deathPenalty = 0;
     private int contractFee = 0;
@@ -32,14 +38,6 @@ public class Bounty implements Comparable<Bounty> {
 
     public void setTarget(String target) {
         this.target = target;
-    }
-
-    public String getHunter() {
-        return hunter;
-    }
-
-    public void setHunter(String hunter) {
-        this.hunter = hunter;
     }
 
     public int getValue() {
@@ -76,6 +74,54 @@ public class Bounty implements Comparable<Bounty> {
             return -1;
         else
             return 0;
+    }
+
+    public List<String> getHunters() {
+        return hunters;
+    }
+
+    public void setHunters(List<String> hunters) {
+        this.hunters = hunters;
+    }
+    
+    public boolean isHunter(String name) {
+        for (String hunter : hunters)
+            if (hunter.equalsIgnoreCase(name))
+                return true;
+        return false;
+    }
+    
+    public void addHunter(String name) {
+        hunters.add(name);
+    }
+    
+    public void removeHunter(String name) {
+        hunters.remove(name);
+        expirations.remove(name);
+    }
+    
+    public long getMillisecondsLeft(String hunter) {
+        Date now = new Date();
+
+        long diff = expirations.get(hunter).getTime() - now.getTime();
+
+        return diff;
+    }
+    
+    public int getMinutesLeft(String hunter) {
+        return (int)Math.ceil(getMillisecondsLeft(hunter) / (1000 * 60));
+    }
+    
+    public Date getExpiration(String hunter) {
+        return expirations.get(hunter);
+    }
+
+    public HashMap<String, Date> getExpirations() {
+        return expirations;
+    }
+
+    public void setExpirations(HashMap<String, Date> expirations) {
+        this.expirations = expirations;
     }
 }
 

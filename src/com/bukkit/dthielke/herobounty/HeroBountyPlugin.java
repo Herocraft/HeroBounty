@@ -2,8 +2,12 @@ package com.bukkit.dthielke.herobounty;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.bukkit.Server;
 import org.bukkit.command.Command;
@@ -25,6 +29,12 @@ public class HeroBountyPlugin extends JavaPlugin {
     private int bountyMin;
     private float bountyFeePercent;
     private float contractFeePercent;
+    private int bountyDuration; // in minutes
+    
+    private Timer expirationTimer = new Timer();
+    
+    public static final int EXPIRATION_TIMER_DELAY = 10000;
+    public static final int EXPIRATION_TIMER_PERIOD = 1 * 60 * 1000;
 
     public HeroBountyPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
@@ -50,6 +60,10 @@ public class HeroBountyPlugin extends JavaPlugin {
         bountyMin = 20;
         bountyFeePercent = 0.10f;
         contractFeePercent = 0.05f;
+        bountyDuration = 3;
+        
+        TimerTask expirationChecker = new ExpirationChecker(this);
+        expirationTimer.scheduleAtFixedRate(expirationChecker, EXPIRATION_TIMER_DELAY, EXPIRATION_TIMER_PERIOD);
     }
 
     public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
@@ -129,8 +143,9 @@ public class HeroBountyPlugin extends JavaPlugin {
         
         int fee = (int)(bountyFeePercent * value);
         int award = value - fee;
+        int contractFee = (int)(contractFeePercent * award);        
         
-        bounties.add(new Bounty(owner.getName(), target.getName(), award, (int)(contractFeePercent * award), (int)(contractFeePercent * award)));
+        bounties.add(new Bounty(owner.getName(), target.getName(), award, contractFee, contractFee));
         Collections.sort(bounties);
         
         iConomy.db.set_balance(owner.getName(), balance - value);
@@ -160,12 +175,12 @@ public class HeroBountyPlugin extends JavaPlugin {
             return false;
         }
         
-        Bounty removedBounty = ownedBounties.get(id);
-        bounties.remove(removedBounty);
+        Bounty bounty = ownedBounties.get(id);
+        bounties.remove(bounty);
         Collections.sort(bounties);
         
-        iConomy.db.set_balance(owner.getName(), iConomy.db.get_balance(owner.getName()) + removedBounty.getValue());
-        owner.sendMessage("You have been reimbursed " + removedBounty.getValue() + iConomy.currency + " for your bounty.");
+        iConomy.db.set_balance(owner.getName(), iConomy.db.get_balance(owner.getName()) + bounty.getValue());
+        owner.sendMessage("You have been reimbursed " + bounty.getValue() + iConomy.currency + " for your bounty.");
         
         return true;
     }
@@ -194,34 +209,46 @@ public class HeroBountyPlugin extends JavaPlugin {
         }
         
         Player hunter = (Player)sender;
+        String hunterName = hunter.getName();
         
-        List<Bounty> openBounties = listOpenBounties();
-        
-        int id = parseBountyId(args[0], openBounties);
+        int id = parseBountyId(args[0], bounties);
         
         if (id < 0) {
             hunter.sendMessage("Bounty not found.");
             return false;
         }
         
-        Bounty acceptedBounty = openBounties.get(id);
+        Bounty bounty = bounties.get(id);
         
-        int balance = iConomy.db.get_balance(hunter.getName());
-        if (balance < acceptedBounty.getContractFee()) {
+        if (bounty.isHunter(hunterName)) {
+            hunter.sendMessage("You have already accepted this bounty!");
+            return false;
+        }
+        
+        int balance = iConomy.db.get_balance(hunterName);
+        if (balance < bounty.getContractFee()) {
             hunter.sendMessage("You don't have enough funds to do that!");
             return false;
         }
         
-        acceptedBounty.setHunter(hunter.getName());
+        bounty.addHunter(hunterName);
         
-        iConomy.db.set_balance(hunter.getName(), balance - acceptedBounty.getContractFee());
+        GregorianCalendar expiration = new GregorianCalendar();
+        expiration.add(Calendar.MINUTE, bountyDuration);
+        bounty.getExpirations().put(hunterName, expiration.getTime());
         
-        hunter.sendMessage("Bounty accepted. You have been charged a " + acceptedBounty.getContractFee() + iConomy.currency + " contract fee.");
-        hunter.sendMessage("Your target is " + acceptedBounty.getTarget() + "! Go go go!");
+        iConomy.db.set_balance(hunterName, balance - bounty.getContractFee());
         
-        Player owner = getServer().getPlayer(acceptedBounty.getOwner());
+        hunter.sendMessage("Bounty accepted. You have been charged a " + bounty.getContractFee() + iConomy.currency + " contract fee.");
+        
+        if (bountyDuration < 60)
+            hunter.sendMessage("Your target is " + bounty.getTarget() + "! This bounty will expire in " + bountyDuration + " minutes.");
+        else
+            hunter.sendMessage("Your target is " + bounty.getTarget() + "! This bounty will expire in " + bountyDuration / 60 + " hours.");
+        
+        Player owner = getServer().getPlayer(bounty.getOwner());
         if (owner != null)
-            owner.sendMessage("Your bounty on " + acceptedBounty.getTarget() + " has been accepted by " + acceptedBounty.getHunter() + ".");
+            owner.sendMessage("Your bounty on " + bounty.getTarget() + " has been accepted by " + hunterName + ".");
         
         return true;
     }
@@ -235,17 +262,19 @@ public class HeroBountyPlugin extends JavaPlugin {
             return false;
         }
         
-        List<Bounty> acceptedBounties = listBountiesAcceptedByPlayer(((Player)sender).getName());
+        Player hunter = (Player)sender;
+        
+        List<Bounty> acceptedBounties = listBountiesAcceptedByPlayer(hunter.getName());
         
         int id = parseBountyId(args[0], acceptedBounties);
         
         if (id == -1) {
-            sender.sendMessage("Bounty not found.");
+            hunter.sendMessage("Bounty not found.");
             return false;
         }
         
-        acceptedBounties.get(id).setHunter("");
-        sender.sendMessage("Bounty abandoned.");
+        acceptedBounties.get(id).removeHunter(hunter.getName());
+        hunter.sendMessage("Bounty abandoned.");
         
         return false;
     }
@@ -254,16 +283,23 @@ public class HeroBountyPlugin extends JavaPlugin {
         if (!(sender instanceof Player))
             return false;
         
-        List<Bounty> acceptedBounties = listBountiesAcceptedByPlayer(((Player)sender).getName());
+        Player hunter = (Player)sender;
+        String hunterName = hunter.getName();
+        
+        List<Bounty> acceptedBounties = listBountiesAcceptedByPlayer(hunterName);
         
         if (acceptedBounties.size() == 0) {
-            sender.sendMessage("You currently have no accepted bounties.");
-            sender.sendMessage("To view available bounties, type '/bounty list'.");
+            hunter.sendMessage("You currently have no accepted bounties.");
+            hunter.sendMessage("To view available bounties, type '/bounty list'.");
         } else {
-            sender.sendMessage("Accepted Bounties: id#. Target - Value");
+            hunter.sendMessage("Accepted Bounties: id#. target - value - time left");
             for (int i = 0; i < acceptedBounties.size(); i++) {
                 Bounty b = acceptedBounties.get(i);
-                sender.sendMessage((i + 1) + ". " + b.getTarget() + " - " + b.getValue() + "c");
+                int minLeft = b.getMinutesLeft(hunterName);
+                if (minLeft < 60)
+                    hunter.sendMessage((i + 1) + ". " + b.getTarget() + " - " + b.getValue() + iConomy.currency + " - " + minLeft + "min");
+                else
+                    hunter.sendMessage((i + 1) + ". " + b.getTarget() + " - " + b.getValue() + iConomy.currency + " - " + minLeft / 60 + "hrs");
             }
         }
         
@@ -295,15 +331,11 @@ public class HeroBountyPlugin extends JavaPlugin {
         return ownedBounties;
     }
     
-    private List<Bounty> listOpenBounties() {
-        return listBountiesAcceptedByPlayer("");
-    }
-    
     private List<Bounty> listBountiesAcceptedByPlayer(String hunter) {
         List<Bounty> acceptedBounties = new ArrayList<Bounty>();
         
         for (Bounty b : bounties)
-            if (b.getHunter().equalsIgnoreCase(hunter))
+            if (b.isHunter(hunter))
                 acceptedBounties.add(b);
         
         return acceptedBounties;
@@ -317,13 +349,13 @@ public class HeroBountyPlugin extends JavaPlugin {
         this.bounties = bounties;
     }
     
-    public boolean completeBounty(int id) {
+    public boolean completeBounty(int id, String hunterName) {
         if (id < 0 || id >= bounties.size())
             return false;
         
         Bounty bounty = bounties.get(id);
         
-        Player hunter = getServer().getPlayer(bounty.getHunter());
+        Player hunter = getServer().getPlayer(hunterName);
         if (hunter == null)
             return false;
         
@@ -349,4 +381,32 @@ public class HeroBountyPlugin extends JavaPlugin {
         
         return true;
     }
+}
+
+class ExpirationChecker extends TimerTask {
+    
+    private HeroBountyPlugin plugin;
+    
+    public ExpirationChecker(HeroBountyPlugin plugin) {
+        this.plugin = plugin;
+    }
+    
+    @Override
+    public void run() {
+        for (Bounty bounty : plugin.getBounties()) {
+            for (String name : bounty.getExpirations().keySet()) {                
+                if (bounty.getMillisecondsLeft(name) <= 0) {
+                    Player hunter = plugin.getServer().getPlayer(name);
+                    
+                    bounty.removeHunter(name);
+                    
+                    if (hunter == null)
+                        continue;
+                    
+                    hunter.sendMessage("Your bounty on " + bounty.getTarget() + " has expired!");
+                }
+            }
+        }
+    }
+    
 }
