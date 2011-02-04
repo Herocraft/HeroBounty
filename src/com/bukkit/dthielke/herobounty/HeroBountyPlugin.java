@@ -213,6 +213,18 @@ public class HeroBountyPlugin extends JavaPlugin {
         iConomy.db.set_balance(owner.getName(), iConomy.db.get_balance(owner.getName()) + bounty.getValue());
         owner.sendMessage(COLOR1 + "You have been reimbursed " + COLOR2 + bounty.getValue() + iConomy.currency + COLOR1 + " for your bounty.");
         
+        for (String hunterName : bounty.getHunters()) {
+            Player hunter = getServer().getPlayer(hunterName);
+            
+            iConomy.db.set_balance(hunterName, iConomy.db.get_balance(hunterName) + bounty.getContractFee());
+            
+            if (hunter == null)
+                continue;
+            
+            hunter.sendMessage(COLOR1 + "The bounty you were pursuing targetting " + COLOR2 + bounty.getTarget() + COLOR1 + " has been cancelled.");
+            hunter.sendMessage(COLOR1 + "You have been reimbursed the " + COLOR2 + bounty.getContractFee() + iConomy.currency + COLOR1 + " you paid for the bounty.");
+        }
+        
         saveData();
         
         return true;

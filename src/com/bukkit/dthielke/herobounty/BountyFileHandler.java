@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.yaml.snakeyaml.DumperOptions;
@@ -40,7 +41,11 @@ public class BountyFileHandler {
         Yaml yaml = new Yaml(constructor);
 
         try {
-            return (List<Bounty>)yaml.load(new FileReader(file));
+            List<Bounty> bounties = (List<Bounty>)yaml.load(new FileReader(file));
+            
+            if (bounties == null)
+                return new ArrayList<Bounty>();
+            return bounties;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return null;
