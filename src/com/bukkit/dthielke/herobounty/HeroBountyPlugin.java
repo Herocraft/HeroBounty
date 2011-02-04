@@ -68,7 +68,7 @@ public class HeroBountyPlugin extends JavaPlugin {
 
     public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
         if (args.length == 0) {
-            return performShowHelp(sender, args);
+            performShowHelp(sender, args);
         }
 
         String commandName = args[0].toLowerCase();
@@ -78,24 +78,33 @@ public class HeroBountyPlugin extends JavaPlugin {
             trimmedArgs[i] = args[i + 1];
 
         if (commandName.equals("help"))
-            return performShowHelp(sender, trimmedArgs);
+            performShowHelp(sender, trimmedArgs);
         else if (commandName.equals("new"))
-            return performNewBounty(sender, trimmedArgs);
+            performNewBounty(sender, trimmedArgs);
         else if (commandName.equals("cancel"))
-            return performCancelBounty(sender, trimmedArgs);
+            performCancelBounty(sender, trimmedArgs);
         else if (commandName.equals("list"))
-            return performListBounties(sender, trimmedArgs);
+            performListBounties(sender, trimmedArgs);
         else if (commandName.equals("accept"))
-            return performAcceptBounty(sender, trimmedArgs);
+            performAcceptBounty(sender, trimmedArgs);
         else if (commandName.equals("abandon"))
-            return performAbandonBounty(sender, trimmedArgs);
+            performAbandonBounty(sender, trimmedArgs);
         else if (commandName.equals("view"))
-            return performViewBounties(sender, trimmedArgs);
+            performViewBounties(sender, trimmedArgs);
 
-        return false;
+        return true;
     }
 
     private boolean performShowHelp(CommandSender sender, String[] args) {
+        sender.sendMessage("Hero Bounty Help:");
+        sender.sendMessage("/bounty help - show this list");
+        sender.sendMessage("/bounty new <player> <value> - posts a new bounty");
+        sender.sendMessage("/bounty cancel <id#> - cancels one of your bounties");
+        sender.sendMessage("/bounty list - lists available bounties");
+        sender.sendMessage("/bounty accept <id#> - accepts a bounty");
+        sender.sendMessage("/bounty abandon <id#> - abandons an accepted bounty");
+        sender.sendMessage("/bounty view - lists bounties you have accepted");
+        
         return false;
     }
 
@@ -176,6 +185,12 @@ public class HeroBountyPlugin extends JavaPlugin {
         }
         
         Bounty bounty = ownedBounties.get(id);
+        
+        if (!bounty.getOwner().equalsIgnoreCase(owner.getName())) {
+            owner.sendMessage("You can only cancel bounties you created.");
+            return false;
+        }
+        
         bounties.remove(bounty);
         Collections.sort(bounties);
         

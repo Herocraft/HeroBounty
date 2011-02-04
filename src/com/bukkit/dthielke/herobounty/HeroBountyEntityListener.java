@@ -29,18 +29,12 @@ public class HeroBountyEntityListener extends EntityListener {
         String defenderName = defender.getName();
         String attackerName = deathRecords.get(defenderName);
         
-        System.out.println("Player died - defender: " + defenderName + "\t attacker: " + attackerName);
-        
         List<Bounty> bounties = plugin.getBounties();
         
         for (int i = 0; i < bounties.size(); i++) {
             Bounty b = bounties.get(i);
             
-            System.out.println("Bounty target: " + b.getTarget() + "\t hunters: " + b.getHunters());
-            
             if (b.getTarget().equalsIgnoreCase(defenderName) && b.isHunter(attackerName)) {
-                
-                System.out.println("Found bounty match");
                 plugin.completeBounty(i, attackerName);
                 deathRecords.remove(defenderName);
                 return;
@@ -70,9 +64,7 @@ public class HeroBountyEntityListener extends EntityListener {
             return;
         
         for (Bounty b : plugin.getBounties()) {
-            if (b.isHunter(attackerName) && b.getTarget().equalsIgnoreCase(defenderName)) {
-                System.out.println("Adding death record - defender: " + defenderName + "\t attacker: " + attackerName);
-                
+            if (b.isHunter(attackerName) && b.getTarget().equalsIgnoreCase(defenderName)) {                
                 deathRecords.put(defenderName, attackerName);
                 break;
             }
