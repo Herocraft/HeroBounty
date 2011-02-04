@@ -11,12 +11,12 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityListener;
 
 public class HeroBountyEntityListener extends EntityListener {
-    private final HeroBountyPlugin plugin;
+    public static HeroBountyPlugin plugin;
     
     private HashMap<String, String> deathRecords = new HashMap<String, String>();
  
     public HeroBountyEntityListener(HeroBountyPlugin plugin) {
-        this.plugin = plugin;
+        HeroBountyEntityListener.plugin = plugin;
     }
     
     public void onEntityDeath(EntityDeathEvent event) {

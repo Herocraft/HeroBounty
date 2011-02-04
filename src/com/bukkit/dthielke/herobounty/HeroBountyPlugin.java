@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -24,21 +23,26 @@ import org.bukkit.util.config.Configuration;
 
 import com.nijikokun.bukkit.iConomy.iConomy;
 
-public class HeroBountyPlugin extends JavaPlugin {    
+public class HeroBountyPlugin extends JavaPlugin {
     private HeroBountyEntityListener entityListener = new HeroBountyEntityListener(this);
-    
+
     private List<Bounty> bounties;
+    private String bountyTag;
     private int bountyMin;
     private float bountyFeePercent;
     private float contractFeePercent;
+    private float deathPenaltyPercent;
     private int bountyDuration; // in minutes
-    
+    private boolean anonymousTargets;
+
     private Timer expirationTimer = new Timer();
-    
+
     public static final int EXPIRATION_TIMER_DELAY = 10000;
     public static final int EXPIRATION_TIMER_PERIOD = 1 * 60 * 1000;
-    public static final String COLOR1 = ChatColor.RED.toString();
-    public static final String COLOR2 = ChatColor.YELLOW.toString();
+    public static final String[] Colors = new String[] { "&c",
+                                                        "&e",
+                                                        "&f",
+                                                        "&7" };
 
     public HeroBountyPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
@@ -55,24 +59,27 @@ public class HeroBountyPlugin extends JavaPlugin {
         pm.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
         pm.registerEvent(Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Priority.Normal, this);
         pm.registerEvent(Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Priority.Normal, this);
-        
+
         PluginDescriptionFile pdfFile = this.getDescription();
         System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " enabled.");
-        
+
         Configuration config = getConfiguration();
-        
+
         bountyMin = config.getInt("bounty-min", 20);
         bountyFeePercent = config.getInt("bounty-fee-percent", 10) / 100f;
         contractFeePercent = config.getInt("contract-fee-percent", 5) / 100f;
+        deathPenaltyPercent = config.getInt("death-penalty-percent", 5) / 100f;
         bountyDuration = config.getInt("bounty-duration", 24 * 60);
-        
+        anonymousTargets = config.getBoolean("anonymous-targets", false);
+        bountyTag = config.getString("bounty-tag", "&e[BOUNTY] ");
+
         File file = new File(getDataFolder(), "data.yml");
         bounties = BountyFileHandler.load(file);
-        
+
         TimerTask expirationChecker = new ExpirationChecker(this);
         expirationTimer.scheduleAtFixedRate(expirationChecker, EXPIRATION_TIMER_DELAY, EXPIRATION_TIMER_PERIOD);
     }
-    
+
     public void saveData() {
         File file = new File(getDataFolder(), "data.yml");
         BountyFileHandler.save(bounties, file);
@@ -81,7 +88,7 @@ public class HeroBountyPlugin extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
         if (args.length == 0) {
             performShowHelp(sender, args);
-            
+
             return true;
         }
 
@@ -110,355 +117,473 @@ public class HeroBountyPlugin extends JavaPlugin {
     }
 
     private boolean performShowHelp(CommandSender sender, String[] args) {
-        sender.sendMessage(COLOR1 + "Hero Bounty Help:");
-        sender.sendMessage(COLOR2 + "/bounty help - show this list");
-        sender.sendMessage(COLOR2 + "/bounty new <player> <value> - posts a new bounty");
-        sender.sendMessage(COLOR2 + "/bounty cancel <id#> - cancels one of your bounties");
-        sender.sendMessage(COLOR2 + "/bounty list - lists available bounties");
-        sender.sendMessage(COLOR2 + "/bounty accept <id#> - accepts a bounty");
-        sender.sendMessage(COLOR2 + "/bounty abandon <id#> - abandons an accepted bounty");
-        sender.sendMessage(COLOR2 + "/bounty view - lists bounties you have accepted");
-        
+        Messaging.save(sender);
+        Messaging.send(Colors[0] + "-----[ " + Colors[2] + " Hero Bounty Help " + Colors[0] + " ]-----");
+        Messaging.send(Colors[1] + "/bounty help - Show this information.");
+        Messaging.send(Colors[1] + "/bounty new <player> <value> - Create a new bounty.");
+        Messaging.send(Colors[1] + "/bounty list - List bounties available.");
+        Messaging.send(Colors[1] + "/bounty accept <id#> - Accept bounty by id.");
+        Messaging.send(Colors[1] + "/bounty abandon <id#> - Abandon bounty by id.");
+        Messaging.send(Colors[1] + "/bounty cancel <id#> - Cancel bounty by id.");
+        Messaging.send(Colors[1] + "/bounty view - View your accepted bounties.");
+
         return false;
+    }
+
+    /**
+     * Basic formatting on Currency
+     * 
+     * @param Balance
+     *            The player balance or amount being payed.
+     * @param currency
+     *            The iConomy currency name
+     * 
+     * @return <code>String</code> - Formatted with commas & currency
+     */
+    private String formatCurrency(int Balance, String currency) {
+        return insertCommas(String.valueOf(Balance)) + " " + currency;
+    }
+
+    /**
+     * Basic formatting for commas.
+     * 
+     * @param str
+     *            The string we are attempting to format
+     * 
+     * @return <code>String</code> - Formatted with commas
+     */
+    private String insertCommas(String str) {
+        if (str.length() < 4) {
+            return str;
+        }
+
+        return insertCommas(str.substring(0, str.length() - 3)) + "," + str.substring(str.length() - 3, str.length());
     }
 
     private boolean performNewBounty(CommandSender sender, String[] args) {
         if (!(sender instanceof Player))
             return false;
-        
+
+        Messaging.save(sender);
+
         if (args.length != 2) {
-            sender.sendMessage(COLOR1 + "Usage: /bounty new <player> <value>");
+            Messaging.send(Colors[0] + "Usage: /bounty new <player> <value>");
             return false;
         }
-        
+
         Player target = getServer().getPlayer(args[0]);
         if (target == null) {
-            sender.sendMessage(COLOR1 + "Target player not found.");
+            Messaging.send(bountyTag + Colors[0] + "Target player not found.");
             return false;
         }
-        
-        Player owner = (Player)sender;
-        
+
+        Player owner = (Player) sender;
+
         for (Bounty b : bounties) {
             if (b.getTarget().equalsIgnoreCase(args[0])) {
-                owner.sendMessage(COLOR1 + "There is already a bounty on " + COLOR2 + target.getName() + COLOR1 + ".");
+                Messaging.send(bountyTag + Colors[0] + "There is already a bounty on " + Colors[2] + target.getName() + Colors[0] + ".");
                 return false;
             }
         }
-        
+
         int value;
-        
+
         try {
             value = Integer.parseInt(args[1]);
-            
+
             if (value < bountyMin)
                 throw new NumberFormatException();
-        } catch(NumberFormatException e) {
-            owner.sendMessage(COLOR1 + "Value must be a number greater than " + COLOR2 + bountyMin + COLOR1 + ".");
+        } catch (NumberFormatException e) {
+            Messaging.send(bountyTag + Colors[0] + "Value must be a number greater than " + Colors[2] + bountyMin + Colors[0] + ".");
             return false;
         }
-        
+
         int balance = iConomy.db.get_balance(owner.getName());
         if (balance < value) {
-            owner.sendMessage(COLOR1 + "You don't have enough funds to do that!");
+            Messaging.send(bountyTag + Colors[0] + "You don't have enough funds to do that!");
             return false;
         }
-        
-        int fee = (int)(bountyFeePercent * value);
+
+        int fee = (int) (bountyFeePercent * value);
         int award = value - fee;
-        int contractFee = (int)(contractFeePercent * award);        
-        
-        bounties.add(new Bounty(owner.getName(), target.getName(), award, contractFee, contractFee));
+        int contractFee = (int) (contractFeePercent * award);
+        int deathPenalty = (int) (deathPenaltyPercent * award);
+
+        bounties.add(new Bounty(owner.getName(), owner.getDisplayName(), target.getName(), target.getDisplayName(), award, contractFee, deathPenalty));
         Collections.sort(bounties);
-        
+
         iConomy.db.set_balance(owner.getName(), balance - value);
-        owner.sendMessage(COLOR1 + "Placed a bounty on " + COLOR2 + target.getName() + COLOR1 + "'s head for " + COLOR2 + award + iConomy.currency + COLOR1 + ".");
-        owner.sendMessage(COLOR1 + "You have been charged a " + COLOR2 + fee + iConomy.currency + COLOR1 + " fee for posting a bounty.");
-        getServer().broadcastMessage(COLOR1 + "A new bounty has been placed for " + COLOR2 + award + iConomy.currency + COLOR1 + ".");
-        
+        Messaging.send(bountyTag + Colors[0] + "Placed a bounty on " + Colors[1] + target.getName() + Colors[0] + "'s head for " + Colors[1] + award
+                + iConomy.currency + Colors[0] + ".");
+        Messaging.send(bountyTag + Colors[0] + "You have been charged a " + Colors[1] + fee + iConomy.currency + Colors[0] + " fee for posting a bounty.");
+        Messaging.broadcast(bountyTag + "A new bounty has been placed for " + Colors[2] + award + iConomy.currency + Colors[1] + ".");
+
         saveData();
-        
+
         return true;
     }
 
     private boolean performCancelBounty(CommandSender sender, String[] args) {
+        Messaging.save(sender);
+
         if (!(sender instanceof Player))
             return false;
-        
+
         if (args.length != 1) {
-            sender.sendMessage(COLOR1 + "Usage: /bounty cancel <id#>");
+            Messaging.send(bountyTag + Colors[0] + "Usage: /bounty cancel <id#>");
             return false;
         }
-        
-        Player owner = (Player)sender;
-        
-        List<Bounty> ownedBounties = listBountiesOwnedByPlayer(((Player)sender).getName());
-        
-        int id = parseBountyId(args[0], ownedBounties);
-        
+
+        Player owner = (Player) sender;
+        Messaging.save(owner);
+
+        int id = parseBountyId(args[0], bounties);
+
         if (id == -1) {
-            owner.sendMessage(COLOR1 + "Bounty not found.");
+            Messaging.send(bountyTag + Colors[0] + "Bounty not found.");
             return false;
         }
-        
-        Bounty bounty = ownedBounties.get(id);
-        
+
+        Bounty bounty = bounties.get(id);
+
         if (!bounty.getOwner().equalsIgnoreCase(owner.getName())) {
-            owner.sendMessage(COLOR1 + "You can only cancel bounties you created.");
+            Messaging.send(bountyTag + Colors[0] + "You can only cancel bounties you created.");
             return false;
         }
-        
+
         bounties.remove(bounty);
         Collections.sort(bounties);
-        
+
         iConomy.db.set_balance(owner.getName(), iConomy.db.get_balance(owner.getName()) + bounty.getValue());
-        owner.sendMessage(COLOR1 + "You have been reimbursed " + COLOR2 + bounty.getValue() + iConomy.currency + COLOR1 + " for your bounty.");
-        
+        Messaging
+                .send(bountyTag + Colors[0] + "You have been reimbursed " + Colors[1] + bounty.getValue() + iConomy.currency + Colors[0] + " for your bounty.");
+
         for (String hunterName : bounty.getHunters()) {
             Player hunter = getServer().getPlayer(hunterName);
-            
+
             iConomy.db.set_balance(hunterName, iConomy.db.get_balance(hunterName) + bounty.getContractFee());
-            
+
             if (hunter == null)
                 continue;
-            
-            hunter.sendMessage(COLOR1 + "The bounty you were pursuing targetting " + COLOR2 + bounty.getTarget() + COLOR1 + " has been cancelled.");
-            hunter.sendMessage(COLOR1 + "You have been reimbursed the " + COLOR2 + bounty.getContractFee() + iConomy.currency + COLOR1 + " you paid for the bounty.");
+
+            Messaging.send(hunter, bountyTag + Colors[0] + "The bounty you were pursuing targetting " + Colors[1] + bounty.getTarget() + Colors[0]
+                    + " has been cancelled.");
+            Messaging.send(hunter,
+                    bountyTag + Colors[0] + "You have been reimbursed the " + Colors[1] + formatCurrency(bounty.getContractFee(), iConomy.currency) + Colors[0]
+                            + " you paid for the bounty.");
         }
-        
+
         saveData();
-        
+
         return true;
     }
 
     private boolean performListBounties(CommandSender sender, String[] args) {
-        if (bounties.size() == 0) {
-            sender.sendMessage(COLOR1 + "There are no available bounties.");
+        if (!(sender instanceof Player))
+            return false;
+
+        Messaging.save(sender);
+        String senderName = ((Player) sender).getName();
+
+        int perPage = 7;
+        int currentPage;
+
+        if (args.length == 0)
+            currentPage = 0;
+        else
+            currentPage = (args[0] == null) ? 0 : Integer.valueOf(args[0]);
+        currentPage = (currentPage == 0) ? 1 : currentPage;
+        int amountPages = (int) Math.ceil(bounties.size() / perPage) + 1;
+        int pageStart = (currentPage - 1) * perPage;
+        int pageEnd = (currentPage - 1) * perPage + perPage;
+        pageEnd = (pageEnd >= bounties.size()) ? bounties.size() - 1 : pageEnd;
+
+        if (bounties.isEmpty()) {
+            Messaging.send(bountyTag + Colors[0] + "No bounties currently listed.");
+        } else if (currentPage > amountPages) {
+            Messaging.send(bountyTag + Colors[0] + "Invalid page number.");
         } else {
-            sender.sendMessage(COLOR1 + "Available Bounties:");
-            for (int i = 0; i < bounties.size(); i++) {
+            Messaging.send(bountyTag + Colors[1] + "Page &f#" + currentPage + Colors[1] + " of &f" + amountPages + Colors[1] + " pages.");
+
+            for (int i = pageStart; i <= pageEnd; i++) {
                 Bounty b = bounties.get(i);
-                sender.sendMessage(COLOR2 + (i + 1) + ". " + b.getValue() + "c");
+
+                String msg = Colors[3] + (i + 1) + ". " + Colors[1];
+
+                if (!anonymousTargets)
+                    msg += b.getTarget() + Colors[3] + " - " + Colors[1];
+
+                msg += formatCurrency(b.getValue(), iConomy.currency) + Colors[3] + " - " + Colors[1] + "Fee: "
+                        + formatCurrency(b.getContractFee(), iConomy.currency);
+
+                if (senderName.equalsIgnoreCase(b.getOwner()))
+                    msg += Colors[3] + " *YOURS*";
+
+                Messaging.send(msg);
             }
         }
+
         return true;
     }
 
     private boolean performAcceptBounty(CommandSender sender, String[] args) {
+        Messaging.save(sender);
+
         if (!(sender instanceof Player))
             return false;
-        
+
         if (args.length != 1) {
-            sender.sendMessage(COLOR1 + "Usage: /bounty accept <id#>");
+            Messaging.send(Colors[0] + "Usage: /bounty accept <id#>");
             return false;
         }
-        
-        Player hunter = (Player)sender;
+
+        Player hunter = (Player) sender;
         String hunterName = hunter.getName();
-        
+
         int id = parseBountyId(args[0], bounties);
-        
+
         if (id < 0) {
-            hunter.sendMessage(COLOR1 + "Bounty not found.");
+            Messaging.send(bountyTag + Colors[0] + "Bounty not found.");
             return false;
         }
-        
+
         Bounty bounty = bounties.get(id);
-        
-        if (bounty.isHunter(hunterName)) {
-            hunter.sendMessage(COLOR1 + "You have already accepted this bounty!");
+
+        if (bounty.getOwner().equalsIgnoreCase(hunter.getName())) {
+            Messaging.send(bountyTag + Colors[0] + "You cannot accept your own bounty!");
             return false;
         }
-        
+
+        if (bounty.getTarget().equalsIgnoreCase(hunterName)) {
+            Messaging.send(bountyTag + Colors[0] + "You cannot accept this bounty!");
+            return false;
+        }
+
+        if (bounty.isHunter(hunterName)) {
+            Messaging.send(bountyTag + Colors[0] + "You have already accepted this bounty!");
+            return false;
+        }
+
         int balance = iConomy.db.get_balance(hunterName);
         if (balance < bounty.getContractFee()) {
-            hunter.sendMessage(COLOR1 + "You don't have enough funds to do that!");
+            Messaging.send(bountyTag + Colors[0] + "You don't have enough funds to do that!");
             return false;
         }
-        
+
         bounty.addHunter(hunterName);
-        
+
         GregorianCalendar expiration = new GregorianCalendar();
         expiration.add(Calendar.MINUTE, bountyDuration);
         bounty.getExpirations().put(hunterName, expiration.getTime());
-        
         iConomy.db.set_balance(hunterName, balance - bounty.getContractFee());
-        
-        hunter.sendMessage(COLOR1 + "Bounty accepted. You have been charged a " + COLOR2 + bounty.getContractFee() + iConomy.currency + COLOR1 + " contract fee.");
-        
-        if (bountyDuration < 60)
-            hunter.sendMessage(COLOR1 + "Your target is " + COLOR2 + bounty.getTarget() + COLOR1 + "! This bounty will expire in " + COLOR2 + bountyDuration + COLOR1 + " minutes.");
-        else
-            hunter.sendMessage(COLOR1 + "Your target is " + COLOR2 + bounty.getTarget() + COLOR1 + "! This bounty will expire in " + COLOR2 + bountyDuration / 60 + COLOR1 + " hours.");
-        
+
+        int bountyRelativeTime = (bountyDuration < 60) ? bountyDuration : (bountyDuration < (60 * 24)) ? bountyDuration / 60
+                : (bountyDuration < (60 * 24 * 7)) ? bountyDuration / (60 * 24) : bountyDuration / (60 * 24 * 7);
+
+        String bountyRelativeAmount = (bountyDuration < 60) ? " minutes" : (bountyDuration < (60 * 24)) ? " hours" : (bountyDuration < (60 * 24 * 7)) ? " days"
+                : " weeks";
+
+        Messaging.send(bountyTag + Colors[0] + "Bounty accepted. You have been charged a " + Colors[2]
+                + formatCurrency(bounty.getContractFee(), iConomy.currency) + Colors[1] + " contract fee.");
+        Messaging.send(bountyTag + Colors[0] + "Target is " + Colors[2] + bounty.getTargetDisplayName() + Colors[1] + "! Bounty will expire in " + Colors[2]
+                + bountyRelativeTime + Colors[1] + bountyRelativeAmount);
+
         Player owner = getServer().getPlayer(bounty.getOwner());
-        if (owner != null)
-            owner.sendMessage(COLOR1 + "Your bounty on " + COLOR2 + bounty.getTarget() + COLOR1 + " has been accepted by " + COLOR2 + hunterName + COLOR1 + ".");
-        
+
+        if (owner != null) {
+            Messaging.send(owner, Colors[0] + "Your bounty on " + Colors[1] + bounty.getTarget() + Colors[0] + " has been accepted by " + Colors[1]
+                    + hunterName + Colors[0] + ".");
+        }
+
         saveData();
-        
+
         return true;
     }
 
     private boolean performAbandonBounty(CommandSender sender, String[] args) {
+        Messaging.save(sender);
+
         if (!(sender instanceof Player))
             return false;
-        
+
         if (args.length != 1) {
-            sender.sendMessage(COLOR1 + "Usage: /bounty abandon <id#>");
+            Messaging.send(Colors[0] + "Usage: /bounty abandon <id#>");
             return false;
         }
-        
-        Player hunter = (Player)sender;
-        
+
+        Player hunter = (Player) sender;
+
         List<Bounty> acceptedBounties = listBountiesAcceptedByPlayer(hunter.getName());
-        
+
         int id = parseBountyId(args[0], acceptedBounties);
-        
+
         if (id == -1) {
-            hunter.sendMessage(COLOR1 + "Bounty not found.");
+            Messaging.send(bountyTag + Colors[0] + "Bounty not found.");
             return false;
         }
-        
+
         acceptedBounties.get(id).removeHunter(hunter.getName());
-        hunter.sendMessage(COLOR1 + "Bounty abandoned.");
-        
+        Messaging.send(bountyTag + Colors[0] + "Bounty abandoned.");
+
         saveData();
-        
+
         return false;
     }
 
     private boolean performViewBounties(CommandSender sender, String[] args) {
+        Messaging.save(sender);
+
         if (!(sender instanceof Player))
             return false;
-        
-        Player hunter = (Player)sender;
+
+        Player hunter = (Player) sender;
         String hunterName = hunter.getName();
-        
+
         List<Bounty> acceptedBounties = listBountiesAcceptedByPlayer(hunterName);
-        
-        if (acceptedBounties.size() == 0) {
-            hunter.sendMessage(COLOR1 + "You currently have no accepted bounties.");
+
+        if (acceptedBounties.isEmpty()) {
+            Messaging.send(bountyTag + Colors[0] + "You currently have no accepted bounties.");
         } else {
-            hunter.sendMessage(COLOR1 + "Accepted Bounties:");
+            Messaging.send(Colors[0] + "Accepted Bounties:");
             for (int i = 0; i < acceptedBounties.size(); i++) {
                 Bounty b = acceptedBounties.get(i);
-                int minLeft = b.getMinutesLeft(hunterName);
-                if (minLeft < 60)
-                    hunter.sendMessage(COLOR2 + (i + 1) + ". " + b.getTarget() + " - " + b.getValue() + iConomy.currency + " - " + minLeft + "min");
-                else
-                    hunter.sendMessage(COLOR2 + (i + 1) + ". " + b.getTarget() + " - " + b.getValue() + iConomy.currency + " - " + minLeft / 60 + "hrs");
+                int bountyDuration = b.getMinutesLeft(hunterName);
+
+                int bountyRelativeTime = (bountyDuration < 60) ? bountyDuration : (bountyDuration < (60 * 24)) ? bountyDuration / 60
+                        : (bountyDuration < (60 * 24 * 7)) ? bountyDuration / (60 * 24) : bountyDuration / (60 * 24 * 7);
+
+                String bountyRelativeAmount = (bountyDuration < 60) ? " minutes" : (bountyDuration < (60 * 24)) ? " hours"
+                        : (bountyDuration < (60 * 24 * 7)) ? " days" : " weeks";
+
+                Messaging.send(Colors[2] + (i + 1) + ". " + Colors[1] + b.getTarget() + " - " + formatCurrency(b.getValue(), iConomy.currency) + " - "
+                        + bountyRelativeTime + bountyRelativeAmount);
             }
         }
-        
+
         return true;
     }
-    
+
     public static int parseBountyId(String idStr, List<Bounty> bounties) {
         int id;
-        
+
         try {
             id = Integer.parseInt(idStr) - 1;
-            
+
             if (id < 0 || id >= bounties.size())
-                throw new IndexOutOfBoundsException();   
-        } catch(Exception e) {
+                throw new IndexOutOfBoundsException();
+        } catch (Exception e) {
             return -1;
         }
-        
+
         return id;
     }
-    
-    private List<Bounty> listBountiesOwnedByPlayer(String owner) {
-        List<Bounty> ownedBounties = new ArrayList<Bounty>();
-        
-        for (Bounty b : bounties)
-            if (b.getOwner().equalsIgnoreCase(owner))
-                ownedBounties.add(b);
-        
-        return ownedBounties;
-    }
-    
+
     private List<Bounty> listBountiesAcceptedByPlayer(String hunter) {
         List<Bounty> acceptedBounties = new ArrayList<Bounty>();
-        
+
         for (Bounty b : bounties)
             if (b.isHunter(hunter))
                 acceptedBounties.add(b);
-        
+
         return acceptedBounties;
     }
-    
+
     public List<Bounty> getBounties() {
         return bounties;
     }
-    
+
     public void setBounties(List<Bounty> bounties) {
         this.bounties = bounties;
     }
-    
+
     public boolean completeBounty(int id, String hunterName) {
         if (id < 0 || id >= bounties.size())
             return false;
-        
+
         Bounty bounty = bounties.get(id);
-        
+
         Player hunter = getServer().getPlayer(hunterName);
         if (hunter == null)
             return false;
-        
+
         Player target = getServer().getPlayer(bounty.getTarget());
         if (target == null)
             return false;
-        
+
         bounties.remove(id);
         Collections.sort(bounties);
-        
+
         int hunterBalance = iConomy.db.get_balance(hunter.getName());
         int targetBalance = iConomy.db.get_balance(target.getName());
         int deathPenalty = bounty.getDeathPenalty();
         if (targetBalance < deathPenalty)
             deathPenalty = targetBalance;
-        
+
         iConomy.db.set_balance(hunter.getName(), hunterBalance + bounty.getValue());
         iConomy.db.set_balance(target.getName(), targetBalance - deathPenalty);
-        
-        getServer().broadcastMessage(COLOR2 + hunter.getName() + COLOR1 + " has collected a bounty on " + COLOR2 + bounty.getTarget() + COLOR1 + " for " + COLOR2 + bounty.getValue() + iConomy.currency + COLOR1 + "!");
-        hunter.sendMessage(COLOR1 + "Well done! You have been awarded " + COLOR2 + bounty.getValue() + iConomy.currency + COLOR1 + ".");
-        target.sendMessage(COLOR1 + "You have lost " + COLOR2 + bounty.getDeathPenalty() + iConomy.currency + COLOR1 + " for falling victim to a bounty issued by " + COLOR2 + bounty.getOwner() + COLOR1 + "!");
-        
+
+        Messaging.broadcast(bountyTag + Colors[1] + hunter.getName() + Colors[0] + " has collected a bounty on " + Colors[1] + bounty.getTargetDisplayName()
+                + Colors[0] + " for " + Colors[1] + formatCurrency(bounty.getValue(), iConomy.currency) + Colors[0] + "!");
+        Messaging.send(hunter, bountyTag + Colors[0] + "Well done! You have been awarded " + Colors[1] + formatCurrency(bounty.getValue(), iConomy.currency)
+                + Colors[0] + ".");
+
+        if (deathPenalty > 0)
+            Messaging.send(target, bountyTag + Colors[0] + "You have lost " + Colors[1] + formatCurrency(bounty.getDeathPenalty(), iConomy.currency)
+                    + Colors[0] + " for falling victim to a bounty issued by " + Colors[1] + bounty.getOwnerDisplayName() + Colors[0] + "!");
+        else
+            Messaging.send(target, bountyTag + Colors[0] + "You have fallen victim to a bounty placed by " + Colors[1] + bounty.getOwnerDisplayName()
+                    + Colors[0] + "!");
+
         saveData();
-        
+
         return true;
+    }
+
+    public String getBountyTag() {
+        return bountyTag;
+    }
+
+    public void setBountyTag(String bountyTag) {
+        this.bountyTag = bountyTag;
     }
 }
 
 class ExpirationChecker extends TimerTask {
-    
+
     private HeroBountyPlugin plugin;
-    
+
     public ExpirationChecker(HeroBountyPlugin plugin) {
         this.plugin = plugin;
     }
-    
+
     @Override
     public void run() {
         for (Bounty bounty : plugin.getBounties()) {
-            for (String name : bounty.getExpirations().keySet()) {                
+            for (String name : bounty.getExpirations().keySet()) {
                 if (bounty.getMillisecondsLeft(name) <= 0) {
                     Player hunter = plugin.getServer().getPlayer(name);
-                    
+
                     bounty.removeHunter(name);
-                    
+
                     plugin.saveData();
-                    
+
                     if (hunter == null)
                         continue;
-                    
-                    hunter.sendMessage(HeroBountyPlugin.COLOR1 + "Your bounty on " + HeroBountyPlugin.COLOR2 + bounty.getTarget() + HeroBountyPlugin.COLOR1 + " has expired!");
+
+                    Messaging.send(hunter,
+                            plugin.getBountyTag() + HeroBountyPlugin.Colors[0] + "Your bounty on " + HeroBountyPlugin.Colors[1] + bounty.getTargetDisplayName()
+                                    + HeroBountyPlugin.Colors[0] + " has expired!");
                 }
             }
         }
     }
-    
+
+    public HeroBountyPlugin getPlugin() {
+        return plugin;
+    }
+
+    public void setPlugin(HeroBountyPlugin plugin) {
+        this.plugin = plugin;
+    }
+
 }

@@ -8,6 +8,8 @@ import java.util.List;
 public class Bounty implements Comparable<Bounty> {
     private String owner = "";
     private String target = "";
+    private String ownerDisplayName = "";
+    private String targetDisplayName = "";
     private List<String> hunters = new ArrayList<String>();
     private HashMap<String, Date> expirations = new HashMap<String, Date>();
     private int value = 0;
@@ -16,9 +18,11 @@ public class Bounty implements Comparable<Bounty> {
 
     public Bounty() {}
     
-    public Bounty(String owner, String target, int value, int contractFee, int deathPenalty) {
+    public Bounty(String owner, String ownerDisplayName, String target, String targetDisplayName, int value, int contractFee, int deathPenalty) {
         this.owner = owner;
+        this.ownerDisplayName = ownerDisplayName;
         this.target = target;
+        this.targetDisplayName = targetDisplayName;
         this.value = value;
         this.contractFee = contractFee;
         this.deathPenalty = deathPenalty;
@@ -122,6 +126,22 @@ public class Bounty implements Comparable<Bounty> {
 
     public void setExpirations(HashMap<String, Date> expirations) {
         this.expirations = expirations;
+    }
+
+    public String getOwnerDisplayName() {
+        return ownerDisplayName;
+    }
+
+    public void setOwnerDisplayName(String ownerDisplayName) {
+        this.ownerDisplayName = ownerDisplayName;
+    }
+
+    public String getTargetDisplayName() {
+        return targetDisplayName;
+    }
+
+    public void setTargetDisplayName(String targetDisplayName) {
+        this.targetDisplayName = targetDisplayName;
     }
 }
 
