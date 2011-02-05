@@ -25,6 +25,7 @@ import com.nijikokun.bukkit.iConomy.iConomy;
 
 public class HeroBountyPlugin extends JavaPlugin {
     private HeroBountyEntityListener entityListener = new HeroBountyEntityListener(this);
+    private HeroBountyPlayerListener playerListener = new HeroBountyPlayerListener(this);
 
     private List<Bounty> bounties;
     private String bountyTag;
@@ -59,6 +60,7 @@ public class HeroBountyPlugin extends JavaPlugin {
         pm.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
         pm.registerEvent(Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Priority.Normal, this);
         pm.registerEvent(Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Priority.Normal, this);
+        pm.registerEvent(Type.PLAYER_TELEPORT, playerListener, Priority.Normal, this);
 
         PluginDescriptionFile pdfFile = this.getDescription();
         System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " enabled.");
@@ -143,7 +145,7 @@ public class HeroBountyPlugin extends JavaPlugin {
     private String formatCurrency(int Balance, String currency) {
         return insertCommas(String.valueOf(Balance)) + " " + currency;
     }
-
+    
     /**
      * Basic formatting for commas.
      * 
@@ -268,9 +270,8 @@ public class HeroBountyPlugin extends JavaPlugin {
 
             Messaging.send(hunter, bountyTag + Colors[0] + "The bounty you were pursuing targetting " + Colors[1] + bounty.getTarget() + Colors[0]
                     + " has been cancelled.");
-            Messaging.send(hunter,
-                    bountyTag + Colors[0] + "You have been reimbursed the " + Colors[1] + formatCurrency(bounty.getContractFee(), iConomy.currency) + Colors[0]
-                            + " you paid for the bounty.");
+            Messaging.send(hunter, bountyTag + Colors[0] + "You have been reimbursed the " + Colors[1]
+                    + formatCurrency(bounty.getContractFee(), iConomy.currency) + Colors[0] + " you paid for the bounty.");
         }
 
         saveData();
@@ -570,9 +571,8 @@ class ExpirationChecker extends TimerTask {
                     if (hunter == null)
                         continue;
 
-                    Messaging.send(hunter,
-                            plugin.getBountyTag() + HeroBountyPlugin.Colors[0] + "Your bounty on " + HeroBountyPlugin.Colors[1] + bounty.getTargetDisplayName()
-                                    + HeroBountyPlugin.Colors[0] + " has expired!");
+                    Messaging.send(hunter, plugin.getBountyTag() + HeroBountyPlugin.Colors[0] + "Your bounty on " + HeroBountyPlugin.Colors[1]
+                            + bounty.getTargetDisplayName() + HeroBountyPlugin.Colors[0] + " has expired!");
                 }
             }
         }

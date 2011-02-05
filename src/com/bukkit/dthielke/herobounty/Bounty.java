@@ -5,11 +5,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
+import org.bukkit.util.Vector;
+
 public class Bounty implements Comparable<Bounty> {
     private String owner = "";
     private String target = "";
     private String ownerDisplayName = "";
     private String targetDisplayName = "";
+    private Vector targetLocation = new Vector();
     private List<String> hunters = new ArrayList<String>();
     private HashMap<String, Date> expirations = new HashMap<String, Date>();
     private int value = 0;
@@ -142,6 +145,14 @@ public class Bounty implements Comparable<Bounty> {
 
     public void setTargetDisplayName(String targetDisplayName) {
         this.targetDisplayName = targetDisplayName;
+    }
+
+    public void setTargetLocation(Vector targetLocation) {
+        this.targetLocation = targetLocation;
+    }
+
+    public Vector getTargetLocation() {
+        return targetLocation;
     }
 }
 
