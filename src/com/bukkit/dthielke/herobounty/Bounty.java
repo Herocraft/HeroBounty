@@ -15,17 +15,19 @@ public class Bounty implements Comparable<Bounty> {
     private List<String> hunters = new ArrayList<String>();
     private HashMap<String, Date> expirations = new HashMap<String, Date>();
     private int value = 0;
+    private int postingFee = 0;
     private int deathPenalty = 0;
     private int contractFee = 0;
 
     public Bounty() {}
     
-    public Bounty(String owner, String ownerDisplayName, String target, String targetDisplayName, int value, int contractFee, int deathPenalty) {
+    public Bounty(String owner, String ownerDisplayName, String target, String targetDisplayName, int value, int postingFee, int contractFee, int deathPenalty) {
         this.owner = owner;
         this.ownerDisplayName = ownerDisplayName;
         this.target = target;
         this.targetDisplayName = targetDisplayName;
         this.value = value;
+        this.setPostingFee(postingFee);
         this.contractFee = contractFee;
         this.deathPenalty = deathPenalty;
     }
@@ -152,6 +154,14 @@ public class Bounty implements Comparable<Bounty> {
 
     public Point2D getTargetLocation() {
         return targetLocation;
+    }
+
+    public void setPostingFee(int postingFee) {
+        this.postingFee = postingFee;
+    }
+
+    public int getPostingFee() {
+        return postingFee;
     }
 }
 

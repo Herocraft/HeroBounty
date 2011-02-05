@@ -37,6 +37,7 @@ public class HeroBountyPlugin extends JavaPlugin {
     private int bountyDuration; // in minutes
     private int locationUpdatePeriod; // in minutes
     private int locationUpdateDistance;
+    private boolean payInconvenience;
     private boolean anonymousTargets;
 
     private Timer expirationTimer = new Timer();
@@ -79,13 +80,14 @@ public class HeroBountyPlugin extends JavaPlugin {
         bountyTag = config.getString("bounty-tag", "&e[BOUNTY] ");
         locationUpdatePeriod = config.getInt("location-update-period", 20) * 60 * 1000;
         locationUpdateDistance = config.getInt("location-update-distance", 100);
+        payInconvenience = config.getBoolean("pay-inconvenience", true);
 
         File file = new File(getDataFolder(), "data.yml");
         bounties = BountyFileHandler.load(file);
 
         TimerTask expirationChecker = new ExpirationChecker(this);
         expirationTimer.scheduleAtFixedRate(expirationChecker, EXPIRATION_TIMER_DELAY, EXPIRATION_TIMER_PERIOD);
-        
+
         TimerTask locationChecker = new LocationChecker(this);
         locationTimer.scheduleAtFixedRate(locationChecker, 0, locationUpdatePeriod);
     }
@@ -127,32 +129,32 @@ public class HeroBountyPlugin extends JavaPlugin {
 
         return true;
     }
-    
+
     private boolean performLocateTarget(CommandSender sender, String[] args) {
         if (!(sender instanceof Player))
             return false;
-        
-        Player hunter = (Player)sender;
+
+        Player hunter = (Player) sender;
         String hunterName = hunter.getName();
         Messaging.save(hunter);
-        
+
         List<Bounty> acceptedBounties = listBountiesAcceptedByPlayer(hunterName);
-        
+
         if (acceptedBounties.isEmpty()) {
             Messaging.send(bountyTag + Colors[0] + "You currently have no accepted bounties.");
         } else {
             Messaging.send(Colors[0] + "Last Known Target Locations: (x,z)");
-            
+
             for (int i = 0; i < acceptedBounties.size(); i++) {
                 Bounty b = acceptedBounties.get(i);
                 Point2D targetLocation = b.getTargetLocation();
-                int x = (int)targetLocation.getX();
-                int z = (int)targetLocation.getY();
-                
-                Messaging.send(Colors[2] + (i + 1) + ". " + Colors[1] + b.getTarget() + " - " + "(" + x + "," + z + ")");
+                int x = (int) targetLocation.getX();
+                int z = (int) targetLocation.getY();
+
+                Messaging.send(Colors[2] + (i + 1) + ". " + Colors[1] + b.getTarget() + ": " + "(" + x + "," + z + ")");
             }
         }
-        
+
         return true;
     }
 
@@ -174,7 +176,7 @@ public class HeroBountyPlugin extends JavaPlugin {
     private String formatCurrency(int Balance, String currency) {
         return formatNumberWithCommas(String.valueOf(Balance)) + " " + currency;
     }
-    
+
     private String formatNumberWithCommas(String str) {
         if (str.length() < 4) {
             return str;
@@ -227,22 +229,24 @@ public class HeroBountyPlugin extends JavaPlugin {
             return false;
         }
 
-        int fee = (int) (bountyFeePercent * value);
-        int award = value - fee;
+        int postingFee = (int) (bountyFeePercent * value);
+        int award = value - postingFee;
         int contractFee = (int) (contractFeePercent * award);
         int deathPenalty = (int) (deathPenaltyPercent * award);
 
-        Bounty bounty = new Bounty(owner.getName(), owner.getDisplayName(), target.getName(), target.getDisplayName(), award, contractFee, deathPenalty);
+        Bounty bounty = new Bounty(owner.getName(), owner.getDisplayName(), target.getName(), target.getDisplayName(), award, postingFee, contractFee,
+                deathPenalty);
         Location loc = target.getLocation();
         bounty.setTargetLocation(new Point2D.Double(loc.getX(), loc.getZ()));
-        
+
         bounties.add(bounty);
         Collections.sort(bounties);
 
         iConomy.db.set_balance(owner.getName(), balance - value);
         Messaging.send(bountyTag + Colors[0] + "Placed a bounty on " + Colors[1] + target.getName() + Colors[0] + "'s head for " + Colors[1] + award
                 + iConomy.currency + Colors[0] + ".");
-        Messaging.send(bountyTag + Colors[0] + "You have been charged a " + Colors[1] + fee + iConomy.currency + Colors[0] + " fee for posting a bounty.");
+        Messaging.send(bountyTag + Colors[0] + "You have been charged a " + Colors[1] + postingFee + iConomy.currency + Colors[0]
+                + " fee for posting a bounty.");
         Messaging.broadcast(bountyTag + Colors[1] + "A new bounty has been placed for " + Colors[2] + award + iConomy.currency + Colors[1] + ".");
 
         saveData();
@@ -285,18 +289,31 @@ public class HeroBountyPlugin extends JavaPlugin {
         Messaging
                 .send(bountyTag + Colors[0] + "You have been reimbursed " + Colors[1] + bounty.getValue() + iConomy.currency + Colors[0] + " for your bounty.");
 
+        int inconvenience = 0;
+
+        List<String> hunters = bounty.getHunters();
+        if (!hunters.isEmpty())
+            inconvenience = (int) Math.floor((double) bounty.getPostingFee() / hunters.size());
+
         for (String hunterName : bounty.getHunters()) {
             Player hunter = getServer().getPlayer(hunterName);
 
             iConomy.db.set_balance(hunterName, iConomy.db.get_balance(hunterName) + bounty.getContractFee());
+
+            if (payInconvenience)
+                iConomy.db.set_balance(hunterName, iConomy.db.get_balance(hunterName) + inconvenience);
 
             if (hunter == null)
                 continue;
 
             Messaging.send(hunter, bountyTag + Colors[0] + "The bounty you were pursuing targetting " + Colors[1] + bounty.getTarget() + Colors[0]
                     + " has been cancelled.");
-            Messaging.send(hunter, bountyTag + Colors[0] + "You have been reimbursed the " + Colors[1]
-                    + formatCurrency(bounty.getContractFee(), iConomy.currency) + Colors[0] + " you paid for the bounty.");
+            Messaging.send(hunter,
+                    bountyTag + Colors[0] + "You have been reimbursed the " + Colors[1] + formatCurrency(bounty.getContractFee(), iConomy.currency) + Colors[0]
+                            + " you paid for the bounty.");
+            if (payInconvenience && inconvenience > 0)
+                Messaging.send(hunter, bountyTag + Colors[0] + "You have received an additional " + Colors[1] + formatCurrency(inconvenience, iConomy.currency)
+                        + Colors[0] + " for the inconvenience.");
         }
 
         saveData();
@@ -578,22 +595,22 @@ public class HeroBountyPlugin extends JavaPlugin {
             for (Bounty b : bounties) {
                 if (b.getTarget().equalsIgnoreCase(p.getName())) {
                     boolean nearAnyone = false;
-                    
+
                     Location loc = p.getLocation();
                     Point2D point = new Point2D.Double(loc.getX(), loc.getZ());
                     for (Player p2 : getServer().getOnlinePlayers()) {
                         if (p2.getName().equals(p.getName()))
                             break;
-                        
+
                         Location loc2 = p2.getLocation();
                         Point2D point2 = new Point2D.Double(loc2.getX(), loc2.getZ());
-                        
+
                         if (point.distance(point2) <= locationUpdateDistance) {
                             nearAnyone = true;
                             break;
                         }
                     }
-                    
+
                     if (nearAnyone) {
                         b.setTargetLocation(point);
                         break;
@@ -626,8 +643,9 @@ class ExpirationChecker extends TimerTask {
                     if (hunter == null)
                         continue;
 
-                    Messaging.send(hunter, plugin.getBountyTag() + HeroBountyPlugin.Colors[0] + "Your bounty on " + HeroBountyPlugin.Colors[1]
-                            + bounty.getTargetDisplayName() + HeroBountyPlugin.Colors[0] + " has expired!");
+                    Messaging.send(hunter,
+                            plugin.getBountyTag() + HeroBountyPlugin.Colors[0] + "Your bounty on " + HeroBountyPlugin.Colors[1] + bounty.getTargetDisplayName()
+                                    + HeroBountyPlugin.Colors[0] + " has expired!");
                 }
             }
         }
@@ -644,13 +662,13 @@ class ExpirationChecker extends TimerTask {
 }
 
 class LocationChecker extends TimerTask {
-    
+
     private HeroBountyPlugin plugin;
 
     public LocationChecker(HeroBountyPlugin plugin) {
         this.plugin = plugin;
     }
-    
+
     @Override
     public void run() {
         plugin.updateBountyTargetLocations();
@@ -663,5 +681,5 @@ class LocationChecker extends TimerTask {
     public HeroBountyPlugin getPlugin() {
         return plugin;
     }
-    
+
 }
