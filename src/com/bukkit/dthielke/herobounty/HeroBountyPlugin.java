@@ -1,5 +1,6 @@
 package com.bukkit.dthielke.herobounty;
 
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -25,7 +27,6 @@ import com.nijikokun.bukkit.iConomy.iConomy;
 
 public class HeroBountyPlugin extends JavaPlugin {
     private HeroBountyEntityListener entityListener = new HeroBountyEntityListener(this);
-    private HeroBountyPlayerListener playerListener = new HeroBountyPlayerListener(this);
 
     private List<Bounty> bounties;
     private String bountyTag;
@@ -34,9 +35,12 @@ public class HeroBountyPlugin extends JavaPlugin {
     private float contractFeePercent;
     private float deathPenaltyPercent;
     private int bountyDuration; // in minutes
+    private int locationUpdatePeriod; // in minutes
+    private int locationUpdateDistance;
     private boolean anonymousTargets;
 
     private Timer expirationTimer = new Timer();
+    private Timer locationTimer = new Timer();
 
     public static final int EXPIRATION_TIMER_DELAY = 10000;
     public static final int EXPIRATION_TIMER_PERIOD = 1 * 60 * 1000;
@@ -60,7 +64,6 @@ public class HeroBountyPlugin extends JavaPlugin {
         pm.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
         pm.registerEvent(Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Priority.Normal, this);
         pm.registerEvent(Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Priority.Normal, this);
-        pm.registerEvent(Type.PLAYER_TELEPORT, playerListener, Priority.Normal, this);
 
         PluginDescriptionFile pdfFile = this.getDescription();
         System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " enabled.");
@@ -74,12 +77,17 @@ public class HeroBountyPlugin extends JavaPlugin {
         bountyDuration = config.getInt("bounty-duration", 24 * 60);
         anonymousTargets = config.getBoolean("anonymous-targets", false);
         bountyTag = config.getString("bounty-tag", "&e[BOUNTY] ");
+        locationUpdatePeriod = config.getInt("location-update-period", 20) * 60 * 1000;
+        locationUpdateDistance = config.getInt("location-update-distance", 100);
 
         File file = new File(getDataFolder(), "data.yml");
         bounties = BountyFileHandler.load(file);
 
         TimerTask expirationChecker = new ExpirationChecker(this);
         expirationTimer.scheduleAtFixedRate(expirationChecker, EXPIRATION_TIMER_DELAY, EXPIRATION_TIMER_PERIOD);
+        
+        TimerTask locationChecker = new LocationChecker(this);
+        locationTimer.scheduleAtFixedRate(locationChecker, 0, locationUpdatePeriod);
     }
 
     public void saveData() {
@@ -114,7 +122,37 @@ public class HeroBountyPlugin extends JavaPlugin {
             performAbandonBounty(sender, trimmedArgs);
         else if (commandName.equals("view"))
             performViewBounties(sender, trimmedArgs);
+        else if (commandName.equals("locate"))
+            performLocateTarget(sender, trimmedArgs);
 
+        return true;
+    }
+    
+    private boolean performLocateTarget(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player))
+            return false;
+        
+        Player hunter = (Player)sender;
+        String hunterName = hunter.getName();
+        Messaging.save(hunter);
+        
+        List<Bounty> acceptedBounties = listBountiesAcceptedByPlayer(hunterName);
+        
+        if (acceptedBounties.isEmpty()) {
+            Messaging.send(bountyTag + Colors[0] + "You currently have no accepted bounties.");
+        } else {
+            Messaging.send(Colors[0] + "Last Known Target Locations: (x,z)");
+            
+            for (int i = 0; i < acceptedBounties.size(); i++) {
+                Bounty b = acceptedBounties.get(i);
+                Point2D targetLocation = b.getTargetLocation();
+                int x = (int)targetLocation.getX();
+                int z = (int)targetLocation.getY();
+                
+                Messaging.send(Colors[2] + (i + 1) + ". " + Colors[1] + b.getTarget() + " - " + "(" + x + "," + z + ")");
+            }
+        }
+        
         return true;
     }
 
@@ -123,43 +161,26 @@ public class HeroBountyPlugin extends JavaPlugin {
         Messaging.send(Colors[0] + "-----[ " + Colors[2] + " Hero Bounty Help " + Colors[0] + " ]-----");
         Messaging.send(Colors[1] + "/bounty help - Show this information.");
         Messaging.send(Colors[1] + "/bounty new <player> <value> - Create a new bounty.");
-        Messaging.send(Colors[1] + "/bounty list - List bounties available.");
+        Messaging.send(Colors[1] + "/bounty list <page#> - List bounties available.");
         Messaging.send(Colors[1] + "/bounty accept <id#> - Accept bounty by id.");
         Messaging.send(Colors[1] + "/bounty abandon <id#> - Abandon bounty by id.");
         Messaging.send(Colors[1] + "/bounty cancel <id#> - Cancel bounty by id.");
         Messaging.send(Colors[1] + "/bounty view - View your accepted bounties.");
+        Messaging.send(Colors[1] + "/bounty locate - Show last known target locations.");
 
         return false;
     }
 
-    /**
-     * Basic formatting on Currency
-     * 
-     * @param Balance
-     *            The player balance or amount being payed.
-     * @param currency
-     *            The iConomy currency name
-     * 
-     * @return <code>String</code> - Formatted with commas & currency
-     */
     private String formatCurrency(int Balance, String currency) {
-        return insertCommas(String.valueOf(Balance)) + " " + currency;
+        return formatNumberWithCommas(String.valueOf(Balance)) + " " + currency;
     }
     
-    /**
-     * Basic formatting for commas.
-     * 
-     * @param str
-     *            The string we are attempting to format
-     * 
-     * @return <code>String</code> - Formatted with commas
-     */
-    private String insertCommas(String str) {
+    private String formatNumberWithCommas(String str) {
         if (str.length() < 4) {
             return str;
         }
 
-        return insertCommas(str.substring(0, str.length() - 3)) + "," + str.substring(str.length() - 3, str.length());
+        return formatNumberWithCommas(str.substring(0, str.length() - 3)) + "," + str.substring(str.length() - 3, str.length());
     }
 
     private boolean performNewBounty(CommandSender sender, String[] args) {
@@ -211,14 +232,18 @@ public class HeroBountyPlugin extends JavaPlugin {
         int contractFee = (int) (contractFeePercent * award);
         int deathPenalty = (int) (deathPenaltyPercent * award);
 
-        bounties.add(new Bounty(owner.getName(), owner.getDisplayName(), target.getName(), target.getDisplayName(), award, contractFee, deathPenalty));
+        Bounty bounty = new Bounty(owner.getName(), owner.getDisplayName(), target.getName(), target.getDisplayName(), award, contractFee, deathPenalty);
+        Location loc = target.getLocation();
+        bounty.setTargetLocation(new Point2D.Double(loc.getX(), loc.getZ()));
+        
+        bounties.add(bounty);
         Collections.sort(bounties);
 
         iConomy.db.set_balance(owner.getName(), balance - value);
         Messaging.send(bountyTag + Colors[0] + "Placed a bounty on " + Colors[1] + target.getName() + Colors[0] + "'s head for " + Colors[1] + award
                 + iConomy.currency + Colors[0] + ".");
         Messaging.send(bountyTag + Colors[0] + "You have been charged a " + Colors[1] + fee + iConomy.currency + Colors[0] + " fee for posting a bounty.");
-        Messaging.broadcast(bountyTag + "A new bounty has been placed for " + Colors[2] + award + iConomy.currency + Colors[1] + ".");
+        Messaging.broadcast(bountyTag + Colors[1] + "A new bounty has been placed for " + Colors[2] + award + iConomy.currency + Colors[1] + ".");
 
         saveData();
 
@@ -304,7 +329,7 @@ public class HeroBountyPlugin extends JavaPlugin {
         } else if (currentPage > amountPages) {
             Messaging.send(bountyTag + Colors[0] + "Invalid page number.");
         } else {
-            Messaging.send(bountyTag + Colors[1] + "Page &f#" + currentPage + Colors[1] + " of &f" + amountPages + Colors[1] + " pages.");
+            Messaging.send(Colors[0] + "Available Bounties (Page &f#" + currentPage + Colors[0] + " of &f" + amountPages + Colors[0] + " ):");
 
             for (int i = pageStart; i <= pageEnd; i++) {
                 Bounty b = bounties.get(i);
@@ -547,6 +572,36 @@ public class HeroBountyPlugin extends JavaPlugin {
     public void setBountyTag(String bountyTag) {
         this.bountyTag = bountyTag;
     }
+
+    public void updateBountyTargetLocations() {
+        for (Player p : getServer().getOnlinePlayers()) {
+            for (Bounty b : bounties) {
+                if (b.getTarget().equalsIgnoreCase(p.getName())) {
+                    boolean nearAnyone = false;
+                    
+                    Location loc = p.getLocation();
+                    Point2D point = new Point2D.Double(loc.getX(), loc.getZ());
+                    for (Player p2 : getServer().getOnlinePlayers()) {
+                        if (p2.getName().equals(p.getName()))
+                            break;
+                        
+                        Location loc2 = p2.getLocation();
+                        Point2D point2 = new Point2D.Double(loc2.getX(), loc2.getZ());
+                        
+                        if (point.distance(point2) <= locationUpdateDistance) {
+                            nearAnyone = true;
+                            break;
+                        }
+                    }
+                    
+                    if (nearAnyone) {
+                        b.setTargetLocation(point);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 class ExpirationChecker extends TimerTask {
@@ -586,4 +641,27 @@ class ExpirationChecker extends TimerTask {
         this.plugin = plugin;
     }
 
+}
+
+class LocationChecker extends TimerTask {
+    
+    private HeroBountyPlugin plugin;
+
+    public LocationChecker(HeroBountyPlugin plugin) {
+        this.plugin = plugin;
+    }
+    
+    @Override
+    public void run() {
+        plugin.updateBountyTargetLocations();
+    }
+
+    public void setPlugin(HeroBountyPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    public HeroBountyPlugin getPlugin() {
+        return plugin;
+    }
+    
 }
