@@ -1,0 +1,5 @@
+TODO List
+
+1.	Allow compounding bounties on the same target
+2.  Allow use of items instead of iConomy (meh)
+3.  Add toggle for tracking system
