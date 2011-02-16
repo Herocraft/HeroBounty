@@ -1,6 +1,6 @@
 package com.bukkit.dthielke.herobounty;
 
-import java.awt.geom.Point2D;
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -11,7 +11,7 @@ public class Bounty implements Comparable<Bounty> {
     private String target = "";
     private String ownerDisplayName = "";
     private String targetDisplayName = "";
-    private Point2D targetLocation = new Point2D.Double();
+    private Point targetLocation = new Point();
     private List<String> hunters = new ArrayList<String>();
     private HashMap<String, Date> expirations = new HashMap<String, Date>();
     private int value = 0;
@@ -100,7 +100,7 @@ public class Bounty implements Comparable<Bounty> {
         return targetDisplayName;
     }
 
-    public Point2D getTargetLocation() {
+    public Point getTargetLocation() {
         return targetLocation;
     }
 
@@ -156,7 +156,7 @@ public class Bounty implements Comparable<Bounty> {
         this.targetDisplayName = targetDisplayName;
     }
 
-    public void setTargetLocation(Point2D targetLocation) {
+    public void setTargetLocation(Point targetLocation) {
         this.targetLocation = targetLocation;
     }
 

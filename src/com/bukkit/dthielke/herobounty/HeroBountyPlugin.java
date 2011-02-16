@@ -1,6 +1,6 @@
 package com.bukkit.dthielke.herobounty;
 
-import java.awt.geom.Point2D;
+import java.awt.Point;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -21,6 +21,7 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 import org.bukkit.util.config.Configuration;
 
 import com.bukkit.dthielke.util.Messaging;
@@ -190,33 +191,34 @@ public class HeroBountyPlugin extends JavaPlugin {
     }
 
     public void updateBountyTargetLocations() {
-        for (Player p : getServer().getOnlinePlayers()) {
+        //for (Player p : getServer().getOnlinePlayers()) {
             for (Bounty b : bounties) {
-                if (b.getTarget().equalsIgnoreCase(p.getName())) {
+                Player p = getServer().getPlayer(b.getTarget());
+                
+                if (p != null) {
                     boolean nearAnyone = false;
 
-                    Location loc = p.getLocation();
-                    Point2D point = new Point2D.Double(loc.getX(), loc.getZ());
+                    Vector loc = p.getLocation().toVector();
                     for (Player p2 : getServer().getOnlinePlayers()) {
                         if (p2.getName().equals(p.getName()))
                             break;
-
-                        Location loc2 = p2.getLocation();
-                        Point2D point2 = new Point2D.Double(loc2.getX(), loc2.getZ());
-
-                        if (point.distance(point2) <= locationUpdateDistance) {
+                        
+                        Vector loc2 = p2.getLocation().toVector();
+                        loc.setY(0);
+                        loc2.setY(0);
+                        if (loc.distance(loc2) <= locationUpdateDistance) {
                             nearAnyone = true;
                             break;
                         }
                     }
 
                     if (nearAnyone) {
-                        b.setTargetLocation(point);
+                        b.setTargetLocation(new Point(loc.getBlockX(), loc.getBlockZ()));
                         break;
                     }
                 }
             }
-        }
+        //}
     }
 
     public boolean isTarget(Player player) {
@@ -477,7 +479,7 @@ public class HeroBountyPlugin extends JavaPlugin {
 
             for (int i = 0; i < acceptedBounties.size(); i++) {
                 Bounty b = acceptedBounties.get(i);
-                Point2D targetLocation = b.getTargetLocation();
+                Point targetLocation = b.getTargetLocation();
                 int x = (int) targetLocation.getX();
                 int z = (int) targetLocation.getY();
 
@@ -511,7 +513,7 @@ public class HeroBountyPlugin extends JavaPlugin {
                 return false;
             }
         }
-
+        
         int value;
 
         try {
@@ -538,7 +540,7 @@ public class HeroBountyPlugin extends JavaPlugin {
         Bounty bounty = new Bounty(owner.getName(), owner.getDisplayName(), target.getName(), target.getDisplayName(), award, postingFee, contractFee,
                 deathPenalty);
         Location loc = target.getLocation();
-        bounty.setTargetLocation(new Point2D.Double(loc.getX(), loc.getZ()));
+        bounty.setTargetLocation(new Point(loc.getBlockX(), loc.getBlockZ()));
 
         bounties.add(bounty);
         Collections.sort(bounties);

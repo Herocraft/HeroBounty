@@ -12,7 +12,7 @@ public class Messaging {
 
     public static String colorize(String msg) {
         String colored = replaceByList(msg, colors, colorCodes);
-        colored.replaceAll("(&([a-z0-9]))", "§$2").replace("&&", "&");
+        colored = colored.replaceAll("(&([a-z0-9]))", "§$2").replace("&&", "&");
         return colored;
     }
 
