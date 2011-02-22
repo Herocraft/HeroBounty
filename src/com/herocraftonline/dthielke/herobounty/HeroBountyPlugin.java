@@ -22,7 +22,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
 
-import com.bukkit.dthielke.util.Messaging;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
 import com.nijikokun.bukkit.iConomy.iConomy;
 
 public class HeroBountyPlugin extends JavaPlugin {
