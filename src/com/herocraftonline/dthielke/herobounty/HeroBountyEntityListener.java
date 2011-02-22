@@ -1,4 +1,4 @@
-package com.bukkit.dthielke.herobounty;
+package com.herocraftonline.dthielke.herobounty;
 
 import java.util.HashMap;
 import java.util.List;
@@ -7,6 +7,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageByProjectileEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityListener;
 
@@ -19,28 +20,32 @@ public class HeroBountyEntityListener extends EntityListener {
         HeroBountyEntityListener.plugin = plugin;
     }
 
-    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+    public void onEntityDamage(EntityDamageEvent event) {
         if (event.isCancelled())
             return;
 
-        if (!(event.getEntity() instanceof Player) || !(event.getDamager() instanceof Player))
+        if (!(event.getEntity() instanceof Player))
             return;
 
         Player defender = (Player) event.getEntity();
-        Player attacker = (Player) event.getDamager();
-        tryAddDeathRecord(defender, attacker, event.getDamage());
-    }
+        int health = defender.getHealth();
+        int damage = event.getDamage();
+        String defenderName = defender.getName();
+        String attackerName = "NOT_A_PLAYER";
 
-    public void onEntityDamageByProjectile(EntityDamageByProjectileEvent event) {
-        if (event.isCancelled())
-            return;
+        if (event instanceof EntityDamageByProjectileEvent) {
+            EntityDamageByProjectileEvent subEvent = (EntityDamageByProjectileEvent) event;
+            Entity attacker = subEvent.getDamager();
+            if (attacker instanceof Player)
+                attackerName = ((Player) attacker).getName();
+        } else if (event instanceof EntityDamageByEntityEvent) {
+            EntityDamageByEntityEvent subEvent = (EntityDamageByEntityEvent) event;
+            Entity attacker = subEvent.getDamager();
+            if (attacker instanceof Player)
+                attackerName = ((Player) attacker).getName();
+        }
 
-        if (!(event.getEntity() instanceof Player) || !(event.getDamager() instanceof Player))
-            return;
-
-        Player defender = (Player) event.getEntity();
-        Player attacker = (Player) event.getDamager();
-        tryAddDeathRecord(defender, attacker, event.getDamage());
+        tryAddDeathRecord(defenderName, attackerName, health, damage);
     }
 
     public void onEntityDeath(EntityDeathEvent event) {
@@ -66,11 +71,8 @@ public class HeroBountyEntityListener extends EntityListener {
         }
     }
 
-    private void tryAddDeathRecord(Player defender, Player attacker, int damage) {
-        String defenderName = defender.getName();
-        String attackerName = attacker.getName();
-
-        int health = defender.getHealth() - damage;
+    private void tryAddDeathRecord(String defenderName, String attackerName, int health, int damage) {
+        health -= damage;
 
         if (health > 0)
             return;

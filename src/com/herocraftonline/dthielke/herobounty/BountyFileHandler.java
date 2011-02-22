@@ -1,5 +1,6 @@
-package com.bukkit.dthielke.herobounty;
+package com.herocraftonline.dthielke.herobounty;
 
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -20,6 +21,7 @@ public class BountyFileHandler {
     public static List<Bounty> load(File file) {
         Constructor constructor = new Constructor();
         constructor.addTypeDescription(new TypeDescription(Bounty.class, new Tag("bounty")));
+        constructor.addTypeDescription(new TypeDescription(Point2D.class, new Tag("location")));
 
         Yaml yaml = new Yaml(constructor);
 
@@ -38,6 +40,7 @@ public class BountyFileHandler {
     public static void save(List<Bounty> bounties, File file) {
         Representer representer = new Representer();
         representer.addClassTag(Bounty.class, new Tag("bounty"));
+        representer.addClassTag(Point2D.class, new Tag("location"));
 
         DumperOptions options = new DumperOptions();
         options.setWidth(300);
