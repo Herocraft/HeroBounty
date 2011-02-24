@@ -38,6 +38,7 @@ public class HeroBountyPlugin extends JavaPlugin {
     private boolean payInconvenience;
     private boolean anonymousTargets;
     private boolean allowNegativeBalances;
+    private int locationRounding;
 
     private Logger logger;
 
@@ -157,6 +158,7 @@ public class HeroBountyPlugin extends JavaPlugin {
         bountyTag = config.getString("bounty-tag", "&e[BOUNTY] ");
         payInconvenience = config.getBoolean("pay-inconvenience", true);
         allowNegativeBalances = config.getBoolean("allow-negative-balances", true);
+        locationRounding = config.getInt("location-rounding", 100);
 
         File file = new File(getDataFolder(), "data.yml");
         bounties = BountyFileHandler.load(file);
@@ -447,9 +449,8 @@ public class HeroBountyPlugin extends JavaPlugin {
                     Location loc = target.getLocation();
                     int x = loc.getBlockX();
                     int z = loc.getBlockZ();
-                    int roundLocToNearest = 25;
-                    x = (int) (Math.round(x / (float) roundLocToNearest) * roundLocToNearest);
-                    z = (int) (Math.round(z / (float) roundLocToNearest) * roundLocToNearest);
+                    x = (int) (Math.round(x / (float) locationRounding) * locationRounding);
+                    z = (int) (Math.round(z / (float) locationRounding) * locationRounding);
                     Messaging.send(hunter, Colors[2] + (i + 1) + ". " + Colors[1] + b.getTarget() + ": " + "(" + x + ", " + z + ")");
                 }
             }

@@ -1,5 +1,6 @@
 package com.herocraftonline.dthielke.herobounty;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -12,6 +13,7 @@ public class Bounty implements Comparable<Bounty> {
     private String targetDisplayName = "";
     private List<String> hunters = new ArrayList<String>();
     private HashMap<String, Date> expirations = new HashMap<String, Date>();
+    private Point2D targetLocation = new Point2D.Double();
     private int value = 0;
     private int postingFee = 0;
     private int deathPenalty = 0;
@@ -152,5 +154,13 @@ public class Bounty implements Comparable<Bounty> {
 
     public void setValue(int value) {
         this.value = value;
+    }
+
+    public void setTargetLocation(Point2D targetLocation) {
+        this.targetLocation = targetLocation;
+    }
+
+    public Point2D getTargetLocation() {
+        return targetLocation;
     }
 }

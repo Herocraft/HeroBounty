@@ -1,6 +1,6 @@
 name: HeroBounty
-version: 1.43
-main: com.bukkit.dthielke.herobounty.HeroBountyPlugin
+version: 1.44
+main: com.herocraftonline.dthielke.herobounty.HeroBountyPlugin
 description: Provides a bounty system with iConomy support
 commands:
   bounty:
