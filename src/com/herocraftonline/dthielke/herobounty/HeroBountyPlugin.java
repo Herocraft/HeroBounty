@@ -142,6 +142,7 @@ public class HeroBountyPlugin extends JavaPlugin {
     public void onEnable() {
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
+        pm.registerEvent(Type.ENTITY_DAMAGED, entityListener, Priority.Normal, this);
 
         PluginDescriptionFile pdfFile = this.getDescription();
         System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " enabled.");

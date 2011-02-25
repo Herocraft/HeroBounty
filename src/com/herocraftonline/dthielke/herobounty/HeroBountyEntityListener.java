@@ -78,7 +78,7 @@ public class HeroBountyEntityListener extends EntityListener {
             return;
 
         for (Bounty b : plugin.getBounties()) {
-            if (b.isHunter(attackerName) && b.getTarget().equalsIgnoreCase(defenderName)) {
+            if (b.getTarget().equalsIgnoreCase(defenderName)) {
                 deathRecords.put(defenderName, attackerName);
                 break;
             }
