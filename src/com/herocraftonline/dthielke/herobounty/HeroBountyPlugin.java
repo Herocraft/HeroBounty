@@ -17,13 +17,15 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
 
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
-import com.nijikokun.bukkit.iConomy.iConomy;
+import com.nijiko.coelho.iConomy.iConomy;
+import com.nijiko.coelho.iConomy.system.Account;
 
 public class HeroBountyPlugin extends JavaPlugin {
     private HeroBountyEntityListener entityListener = new HeroBountyEntityListener(this);
@@ -65,24 +67,25 @@ public class HeroBountyPlugin extends JavaPlugin {
         bounties.remove(id);
         Collections.sort(bounties);
 
-        int hunterBalance = iConomy.db.get_balance(hunter.getName());
-        int targetBalance = iConomy.db.get_balance(target.getName());
-        int deathPenalty = bounty.getDeathPenalty();
+        Account hunterAccount = iConomy.getBank().getAccount(hunter.getName());
+        Account targetAccount = iConomy.getBank().getAccount(target.getName());
+        double targetBalance = targetAccount.getBalance();
+        double deathPenalty = bounty.getDeathPenalty();
         if (!allowNegativeBalances && (targetBalance < deathPenalty))
             deathPenalty = targetBalance;
 
-        iConomy.db.set_balance(hunter.getName(), hunterBalance + bounty.getValue());
-        iConomy.db.set_balance(target.getName(), targetBalance - deathPenalty);
+        hunterAccount.add(bounty.getValue());
+        targetAccount.subtract(deathPenalty);
 
         Messaging.broadcast(this,
                 bountyTag + Colors[1] + hunter.getName() + Colors[0] + " has collected a bounty on " + Colors[1] + bounty.getTargetDisplayName() + Colors[0]
-                        + " for " + Colors[1] + formatCurrency(bounty.getValue(), iConomy.currency) + Colors[0] + "!");
-        Messaging.send(hunter, bountyTag + Colors[0] + "Well done! You have been awarded " + Colors[1] + formatCurrency(bounty.getValue(), iConomy.currency)
+                        + " for " + Colors[1] + iConomy.getBank().format(bounty.getValue()) + Colors[0] + "!");
+        Messaging.send(hunter, bountyTag + Colors[0] + "Well done! You have been awarded " + Colors[1] + iConomy.getBank().format(bounty.getValue())
                 + Colors[0] + ".");
 
         if (deathPenalty > 0)
-            Messaging.send(target, bountyTag + Colors[0] + "You have lost " + Colors[1] + formatCurrency(bounty.getDeathPenalty(), iConomy.currency)
-                    + Colors[0] + " for falling victim to a bounty issued by " + Colors[1] + bounty.getOwnerDisplayName() + Colors[0] + "!");
+            Messaging.send(target, bountyTag + Colors[0] + "You have lost " + Colors[1] + iConomy.getBank().format(bounty.getDeathPenalty()) + Colors[0]
+                    + " for falling victim to a bounty issued by " + Colors[1] + bounty.getOwnerDisplayName() + Colors[0] + "!");
         else
             Messaging.send(target, bountyTag + Colors[0] + "You have fallen victim to a bounty placed by " + Colors[1] + bounty.getOwnerDisplayName()
                     + Colors[0] + "!");
@@ -90,6 +93,16 @@ public class HeroBountyPlugin extends JavaPlugin {
         saveData();
 
         return true;
+    }
+
+    public boolean checkIConomy() {
+        Plugin test = this.getServer().getPluginManager().getPlugin("iConomy");
+        boolean useIConomy = false;
+        if (test != null) {
+            useIConomy = true;
+        }
+        return useIConomy;
+
     }
 
     public List<Bounty> getBounties() {
@@ -135,7 +148,11 @@ public class HeroBountyPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        expirationTimer.cancel();
+        expirationTimer.purge();
 
+        PluginDescriptionFile pdfFile = this.getDescription();
+        log(pdfFile.getName() + " version " + pdfFile.getVersion() + " disabled.");
     }
 
     @Override
@@ -144,9 +161,10 @@ public class HeroBountyPlugin extends JavaPlugin {
         pm.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
         pm.registerEvent(Type.ENTITY_DAMAGED, entityListener, Priority.Normal, this);
 
-        PluginDescriptionFile pdfFile = this.getDescription();
-        System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " enabled.");
         logger = Logger.getLogger("Minecraft");
+
+        PluginDescriptionFile pdfFile = this.getDescription();
+        log(pdfFile.getName() + " version " + pdfFile.getVersion() + " enabled.");
 
         Configuration config = getConfiguration();
 
@@ -164,8 +182,13 @@ public class HeroBountyPlugin extends JavaPlugin {
         File file = new File(getDataFolder(), "data.yml");
         bounties = BountyFileHandler.load(file);
 
-        TimerTask expirationChecker = new ExpirationChecker(this);
-        expirationTimer.scheduleAtFixedRate(expirationChecker, EXPIRATION_TIMER_DELAY, EXPIRATION_TIMER_PERIOD);
+        if (checkIConomy()) {
+            TimerTask expirationChecker = new ExpirationChecker(this);
+            expirationTimer.scheduleAtFixedRate(expirationChecker, EXPIRATION_TIMER_DELAY, EXPIRATION_TIMER_PERIOD);
+        } else {
+            logger.log(Level.WARNING, "iConomy not found. Disabling.");
+            pm.disablePlugin(this);
+        }
     }
 
     public void log(String log) {
@@ -191,18 +214,6 @@ public class HeroBountyPlugin extends JavaPlugin {
             if (bounty.getTarget().equals(name))
                 return true;
         return false;
-    }
-
-    private String formatCurrency(int Balance, String currency) {
-        return formatNumberWithCommas(String.valueOf(Balance)) + " " + currency;
-    }
-
-    private String formatNumberWithCommas(String str) {
-        if (str.length() < 4) {
-            return str;
-        }
-
-        return formatNumberWithCommas(str.substring(0, str.length() - 3)) + "," + str.substring(str.length() - 3, str.length());
     }
 
     private List<Bounty> listBountiesAcceptedByPlayer(String hunter) {
@@ -279,7 +290,8 @@ public class HeroBountyPlugin extends JavaPlugin {
             return false;
         }
 
-        int balance = iConomy.db.get_balance(hunterName);
+        Account hunterAccount = iConomy.getBank().getAccount(hunterName);
+        double balance = hunterAccount.getBalance();
         if (balance < bounty.getContractFee()) {
             Messaging.send(sender, bountyTag + Colors[0] + "You don't have enough funds to do that!");
             return false;
@@ -290,7 +302,7 @@ public class HeroBountyPlugin extends JavaPlugin {
         GregorianCalendar expiration = new GregorianCalendar();
         expiration.add(Calendar.MINUTE, bountyDuration);
         bounty.getExpirations().put(hunterName, expiration.getTime());
-        iConomy.db.set_balance(hunterName, balance - bounty.getContractFee());
+        hunterAccount.subtract(bounty.getContractFee());
 
         int bountyRelativeTime = (bountyDuration < 60) ? bountyDuration : (bountyDuration < (60 * 24)) ? bountyDuration / 60
                 : (bountyDuration < (60 * 24 * 7)) ? bountyDuration / (60 * 24) : bountyDuration / (60 * 24 * 7);
@@ -299,7 +311,7 @@ public class HeroBountyPlugin extends JavaPlugin {
                 : " weeks";
 
         Messaging.send(sender,
-                bountyTag + Colors[0] + "Bounty accepted. You have been charged a " + Colors[2] + formatCurrency(bounty.getContractFee(), iConomy.currency)
+                bountyTag + Colors[0] + "Bounty accepted. You have been charged a " + Colors[2] + iConomy.getBank().format(bounty.getContractFee())
                         + Colors[1] + " contract fee.");
         Messaging.send(sender, bountyTag + Colors[0] + "Target is " + Colors[2] + bounty.getTargetDisplayName() + Colors[1] + "! Bounty will expire in "
                 + Colors[2] + bountyRelativeTime + Colors[1] + bountyRelativeAmount);
@@ -344,8 +356,9 @@ public class HeroBountyPlugin extends JavaPlugin {
         bounties.remove(bounty);
         Collections.sort(bounties);
 
-        iConomy.db.set_balance(owner.getName(), iConomy.db.get_balance(owner.getName()) + bounty.getValue());
-        Messaging.send(sender, bountyTag + Colors[0] + "You have been reimbursed " + Colors[1] + bounty.getValue() + iConomy.currency + Colors[0]
+        Account ownerAccount = iConomy.getBank().getAccount(owner.getName());
+        ownerAccount.add(bounty.getValue());
+        Messaging.send(sender, bountyTag + Colors[0] + "You have been reimbursed " + Colors[1] + iConomy.getBank().format(bounty.getValue()) + Colors[0]
                 + " for your bounty.");
 
         int inconvenience = 0;
@@ -357,10 +370,11 @@ public class HeroBountyPlugin extends JavaPlugin {
         for (String hunterName : bounty.getHunters()) {
             Player hunter = getServer().getPlayer(hunterName);
 
-            iConomy.db.set_balance(hunterName, iConomy.db.get_balance(hunterName) + bounty.getContractFee());
+            Account hunterAccount = iConomy.getBank().getAccount(hunterName);
+            hunterAccount.add(bounty.getContractFee());
 
             if (payInconvenience)
-                iConomy.db.set_balance(hunterName, iConomy.db.get_balance(hunterName) + inconvenience);
+                hunterAccount.add(inconvenience);
 
             if (hunter == null)
                 continue;
@@ -368,10 +382,10 @@ public class HeroBountyPlugin extends JavaPlugin {
             Messaging.send(hunter, bountyTag + Colors[0] + "The bounty you were pursuing targetting " + Colors[1] + bounty.getTarget() + Colors[0]
                     + " has been cancelled.");
             Messaging.send(hunter,
-                    bountyTag + Colors[0] + "You have been reimbursed the " + Colors[1] + formatCurrency(bounty.getContractFee(), iConomy.currency) + Colors[0]
+                    bountyTag + Colors[0] + "You have been reimbursed the " + Colors[1] + iConomy.getBank().format(bounty.getContractFee()) + Colors[0]
                             + " you paid for the bounty.");
             if (payInconvenience && inconvenience > 0)
-                Messaging.send(hunter, bountyTag + Colors[0] + "You have received an additional " + Colors[1] + formatCurrency(inconvenience, iConomy.currency)
+                Messaging.send(hunter, bountyTag + Colors[0] + "You have received an additional " + Colors[1] + iConomy.getBank().format(inconvenience)
                         + Colors[0] + " for the inconvenience.");
         }
 
@@ -414,8 +428,8 @@ public class HeroBountyPlugin extends JavaPlugin {
                 if (!anonymousTargets)
                     msg += b.getTarget() + Colors[3] + " - " + Colors[1];
 
-                msg += formatCurrency(b.getValue(), iConomy.currency) + Colors[3] + " - " + Colors[1] + "Fee: "
-                        + formatCurrency(b.getContractFee(), iConomy.currency);
+                msg += iConomy.getBank().format(b.getValue()) + Colors[3] + " - " + Colors[1] + "Fee: "
+                        + iConomy.getBank().format(b.getContractFee());
 
                 if (senderName.equalsIgnoreCase(b.getOwner()))
                     msg += Colors[3] + " *YOURS*";
@@ -477,6 +491,11 @@ public class HeroBountyPlugin extends JavaPlugin {
 
         Player owner = (Player) sender;
 
+        if (target.getName().equals(owner.getName())) {
+            Messaging.send(sender, bountyTag + Colors[0] + "You cannot place a bounty on yourself!");
+            return false;
+        }
+        
         for (Bounty b : bounties) {
             if (b.getTarget().equalsIgnoreCase(target.getName())) {
                 Messaging.send(sender, bountyTag + Colors[0] + "There is already a bounty on " + Colors[2] + target.getName() + Colors[0] + ".");
@@ -496,7 +515,8 @@ public class HeroBountyPlugin extends JavaPlugin {
             return false;
         }
 
-        int balance = iConomy.db.get_balance(owner.getName());
+        Account ownerAccount = iConomy.getBank().getAccount(owner.getName());
+        double balance = ownerAccount.getBalance();
         if (balance < value) {
             Messaging.send(sender, bountyTag + Colors[0] + "You don't have enough funds to do that!");
             return false;
@@ -512,12 +532,11 @@ public class HeroBountyPlugin extends JavaPlugin {
         bounties.add(bounty);
         Collections.sort(bounties);
 
-        iConomy.db.set_balance(owner.getName(), balance - value);
-        Messaging.send(sender, bountyTag + Colors[0] + "Placed a bounty on " + Colors[1] + target.getName() + Colors[0] + "'s head for " + Colors[1] + award
-                + iConomy.currency + Colors[0] + ".");
-        Messaging.send(sender, bountyTag + Colors[0] + "You have been charged a " + Colors[1] + postingFee + iConomy.currency + Colors[0]
+        ownerAccount.subtract(value);
+        Messaging.send(sender, bountyTag + Colors[0] + "Placed a bounty on " + Colors[1] + target.getName() + Colors[0] + "'s head for " + Colors[1] + iConomy.getBank().format(award) + Colors[0] + ".");
+        Messaging.send(sender, bountyTag + Colors[0] + "You have been charged a " + Colors[1] + iConomy.getBank().format(postingFee) + Colors[0]
                 + " fee for posting a bounty.");
-        Messaging.broadcast(this, bountyTag + Colors[1] + "A new bounty has been placed for " + Colors[2] + award + iConomy.currency + Colors[1] + ".");
+        Messaging.broadcast(this, bountyTag + Colors[1] + "A new bounty has been placed for " + Colors[2] + iConomy.getBank().format(award) + Colors[1] + ".");
 
         saveData();
 
@@ -561,7 +580,7 @@ public class HeroBountyPlugin extends JavaPlugin {
                 String bountyRelativeAmount = (bountyDuration < 60) ? " minutes" : (bountyDuration < (60 * 24)) ? " hours"
                         : (bountyDuration < (60 * 24 * 7)) ? " days" : " weeks";
 
-                Messaging.send(sender, Colors[2] + (i + 1) + ". " + Colors[1] + b.getTarget() + " - " + formatCurrency(b.getValue(), iConomy.currency) + " - "
+                Messaging.send(sender, Colors[2] + (i + 1) + ". " + Colors[1] + b.getTarget() + " - " + iConomy.getBank().format(b.getValue()) + " - "
                         + bountyRelativeTime + bountyRelativeAmount);
             }
         }
