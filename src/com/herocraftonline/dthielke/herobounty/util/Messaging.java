@@ -16,11 +16,11 @@ public class Messaging {
     public static final String[] colors = { "<black>", "<navy>", "<green>", "<teal>", "<red>", "<purple>", "<gold>", "<silver>", "<gray>", "<blue>", "<lime>",
                                            "<aqua>", "<rose>", "<pink>", "<yellow>", "<white>" };
 
-    public static final String[] colorCodes = { "ง0", "ง1", "ง2", "ง3", "ง4", "ง5", "ง6", "ง7", "ง8", "ง9", "งa", "งb", "งc", "งd", "งe", "งf" };
+    public static final String[] colorCodes = { "ยง0", "ยง1", "ยง2", "ยง3", "ยง4", "ยง5", "ยง6", "ยง7", "ยง8", "ยง9", "ยงa", "ยงb", "ยงc", "ยงd", "ยงe", "ยงf" };
 
     public static String colorize(String msg) {
         String colored = replaceByList(msg, colors, colorCodes);
-        colored = colored.replaceAll("(&([a-z0-9]))", "ง$2").replace("&&", "&");
+        colored = colored.replaceAll("(&([a-z0-9]))", "ยง$2").replace("&&", "&");
         return colored;
     }
 
