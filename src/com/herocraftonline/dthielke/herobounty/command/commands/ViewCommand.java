@@ -16,7 +16,7 @@ public class ViewCommand extends BaseCommand {
         super(plugin);
         name = "View";
         description = "Shows a list of bounties you have accepted";
-        usage = "/bounty view";
+        usage = "§e/bounty view";
         minArgs = 0;
         maxArgs = 0;
         identifiers.add("bounty view");

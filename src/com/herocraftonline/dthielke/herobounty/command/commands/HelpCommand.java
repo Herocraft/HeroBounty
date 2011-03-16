@@ -1,17 +1,20 @@
 package com.herocraftonline.dthielke.herobounty.command.commands;
 
+import java.util.List;
+
 import org.bukkit.command.CommandSender;
 
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
 
 public class HelpCommand extends BaseCommand {
+    private static final int CMDS_PER_PAGE = 8;
 
     public HelpCommand(HeroBounty plugin) {
         super(plugin);
         name = "Help";
         description = "Displays a list of commands";
-        usage = "/bounty help";
+        usage = "§e/bounty help";
         minArgs = 0;
         maxArgs = 0;
         identifiers.add("bounty help");
@@ -19,15 +22,35 @@ public class HelpCommand extends BaseCommand {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        sender.sendMessage("§c-----[ " + "§fHero Bounty Help " + "§c ]-----");
-        sender.sendMessage("§e/bounty help - Show this information.");
-        sender.sendMessage("§e/bounty new <player> <value> - Create a new bounty.");
-        sender.sendMessage("§e/bounty list <page#> - List bounties available.");
-        sender.sendMessage("§e/bounty accept <id#> - Accept bounty by id.");
-        sender.sendMessage("§e/bounty abandon <id#> - Abandon bounty by id.");
-        sender.sendMessage("§e/bounty cancel <id#> - Cancel bounty by id.");
-        sender.sendMessage("§e/bounty view - View your accepted bounties.");
-        sender.sendMessage("§e/bounty locate - Show last known target locations.");
+        int page = 0;
+        if (args.length != 0) {
+            try {
+                page = Integer.parseInt(args[0]) - 1;
+            } catch (NumberFormatException e) {}
+        }
+
+        List<BaseCommand> commands = plugin.getCommandManager().getCommands();
+
+        int numPages = commands.size() / CMDS_PER_PAGE;
+        if (commands.size() % CMDS_PER_PAGE != 0) {
+            numPages++;
+        }
+        
+        if (page >= numPages || page < 0) {
+            page = 0;
+        }
+        sender.sendMessage("§c-----[ " + "§f" + plugin.getTag().replace("[", "§f").replace("]","§f") + "Help <" + (page + 1) + "/" + numPages + ">§c ]-----");
+        int start = page * CMDS_PER_PAGE;
+        int end = start + CMDS_PER_PAGE;
+        if (end > commands.size()) {
+            end = commands.size();
+        }
+        for (int c = start; c < end; c++) {
+            BaseCommand cmd = commands.get(c);
+            sender.sendMessage("  §a" + cmd.getUsage());
+        }
+        
+        sender.sendMessage("§cFor more info on a particular command, type '/<command> ?'");
     }
 
 }

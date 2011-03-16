@@ -19,7 +19,7 @@ public class AcceptCommand extends BaseCommand {
         super(plugin);
         name = "Accept";
         description = "Accepts a posted bounty for a small contract fee";
-        usage = "/bounty accept <id#>";
+        usage = "§e/bounty accept §9<id#>";
         minArgs = 1;
         maxArgs = 1;
         identifiers.add("bounty accept");
@@ -32,8 +32,8 @@ public class AcceptCommand extends BaseCommand {
             String hunterName = hunter.getName();
             List<Bounty> bounties = plugin.getBounties();
             int id = HeroBounty.parseBountyId(args[0], bounties);
-            Bounty bounty = bounties.get(id);
             if (id != -1) {
+                Bounty bounty = bounties.get(id);
                 if (!bounty.getOwner().equals(hunterName)) {
                     if (!bounty.getTarget().equals(hunterName)) {
                         if (!bounty.isHunter(hunterName)) {

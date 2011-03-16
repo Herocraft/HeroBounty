@@ -43,16 +43,18 @@ public class CommandManager {
         }
 
         if (match != null) {
-            if (trimmedArgs != null) {
-                match.execute(sender, trimmedArgs);
-                return true;
+            if (trimmedArgs == null || (args.length > 0 && args[args.length - 1].equals("?"))) {
+                sender.sendMessage("§cCommand:§e " + match.getName());
+                sender.sendMessage("§cDescription:§e " + match.getDescription());
+                sender.sendMessage("§cUsage:§e " + match.getUsage());
+                List<String> notes = match.getNotes();
+                for (String note : notes) {
+                    sender.sendMessage("§e" + note);
+                }
             } else {
-                sender.sendMessage("§cCommand: " + match.getName());
-                sender.sendMessage("§cDescription: " + match.getDescription());
-                sender.sendMessage("§cUsage: " + match.getUsage());
+                match.execute(sender, trimmedArgs);
             }
         }
-
         return true;
     }
 
@@ -62,5 +64,9 @@ public class CommandManager {
 
     public void removeCommand(BaseCommand command) {
         commands.remove(command);
+    }
+
+    public List<BaseCommand> getCommands() {
+        return commands;
     }
 }

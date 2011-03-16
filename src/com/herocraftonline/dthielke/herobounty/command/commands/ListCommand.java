@@ -16,7 +16,7 @@ public class ListCommand extends BaseCommand {
         super(plugin);
         name = "List";
         description = "Lists available bounties";
-        usage = "/bounty list [page#]";
+        usage = "§e/bounty list §8[page#]";
         minArgs = 0;
         maxArgs = 1;
         identifiers.add("bounty list");

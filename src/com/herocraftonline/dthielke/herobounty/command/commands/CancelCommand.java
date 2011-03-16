@@ -18,7 +18,7 @@ public class CancelCommand extends BaseCommand {
         super(plugin);
         name = "Cancel";
         description = "Cancels a previously posted bounty";
-        usage = "/bounty cancel <id#>";
+        usage = "§e/bounty cancel §9<id#>";
         minArgs = 1;
         maxArgs = 1;
         identifiers.add("bounty cancel");

@@ -24,10 +24,12 @@ public abstract class BaseCommand {
     protected int minArgs;
     protected int maxArgs;
     protected List<String> identifiers;
+    protected List<String> notes;
 
     public BaseCommand(HeroBounty plugin) {
         this.plugin = plugin;
         this.identifiers = new ArrayList<String>();
+        this.notes = new ArrayList<String>();
     }
 
     public abstract void execute(CommandSender sender, String[] args);
@@ -87,6 +89,10 @@ public abstract class BaseCommand {
 
     public String getUsage() {
         return usage;
+    }
+    
+    public List<String> getNotes() {
+        return notes;
     }
 
 }

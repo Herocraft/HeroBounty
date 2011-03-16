@@ -15,7 +15,7 @@ public class AbandonCommand extends BaseCommand {
         super(plugin);
         name = "Abandon";
         description = "Abandons a previously accepted bounty";
-        usage = "/bounty abandon <id#>";
+        usage = "§e/bounty abandon §9<id#>";
         minArgs = 1;
         maxArgs = 1;
         identifiers.add("bounty abandon");

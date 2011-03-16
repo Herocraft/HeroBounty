@@ -44,7 +44,6 @@ import com.nijiko.coelho.iConomy.system.Account;
 public class HeroBounty extends JavaPlugin {
     private HeroBountyEntityListener entityListener = new HeroBountyEntityListener(this);
     private CommandManager commandManager;
-
     private List<Bounty> bounties;
     private String tag;
     private int bountyMin;
@@ -172,7 +171,7 @@ public class HeroBounty extends JavaPlugin {
     }
 
     public void log(String log) {
-        this.log.log(Level.INFO, "[HEROBOUNTY] " + log);
+        this.log.log(Level.INFO, "[HeroBounty] " + log);
     }
 
     public void saveData() {
@@ -204,14 +203,14 @@ public class HeroBounty extends JavaPlugin {
 
     private void registerCommands() {
         commandManager = new CommandManager();
-        commandManager.addCommand(new AbandonCommand(this));
-        commandManager.addCommand(new AcceptCommand(this));
-        commandManager.addCommand(new CancelCommand(this));
         commandManager.addCommand(new HelpCommand(this));
         commandManager.addCommand(new ListCommand(this));
-        commandManager.addCommand(new LocateCommand(this));
-        commandManager.addCommand(new NewCommand(this));
         commandManager.addCommand(new ViewCommand(this));
+        commandManager.addCommand(new AcceptCommand(this));
+        commandManager.addCommand(new AbandonCommand(this));
+        commandManager.addCommand(new NewCommand(this));
+        commandManager.addCommand(new CancelCommand(this));
+        commandManager.addCommand(new LocateCommand(this));
     }
 
     public List<Bounty> listBountiesAcceptedByPlayer(String hunter) {
@@ -300,6 +299,10 @@ public class HeroBounty extends JavaPlugin {
 
     public void setPayInconvenience(boolean payInconvenience) {
         this.payInconvenience = payInconvenience;
+    }
+
+    public CommandManager getCommandManager() {
+        return commandManager;
     }
 }
 

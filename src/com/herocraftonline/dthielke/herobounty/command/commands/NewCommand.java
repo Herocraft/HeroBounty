@@ -18,9 +18,9 @@ public class NewCommand extends BaseCommand {
         super(plugin);
         name = "New";
         description = "Creates a new bounty for a fee";
-        usage = "/ch locate";
-        minArgs = 0;
-        maxArgs = 0;
+        usage = "§e/bounty new §9<target> <value>";
+        minArgs = 2;
+        maxArgs = 2;
         identifiers.add("bounty new");
     }
 
