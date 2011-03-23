@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
 import com.nijiko.coelho.iConomy.iConomy;
 
 public class ListCommand extends BaseCommand {
@@ -26,7 +27,7 @@ public class ListCommand extends BaseCommand {
     public void execute(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             String senderName = ((Player) sender).getName();
-            List<Bounty> bounties = plugin.getBounties();
+            List<Bounty> bounties = plugin.getBountyManager().getBounties();
 
             int perPage = 7;
             int currentPage;
@@ -46,15 +47,15 @@ public class ListCommand extends BaseCommand {
             pageEnd = (pageEnd >= bounties.size()) ? bounties.size() - 1 : pageEnd;
 
             if (bounties.isEmpty()) {
-                sender.sendMessage(plugin.getTag() + "§cNo bounties currently listed.");
+                Messaging.send(plugin, sender, "No bounties currently listed.");
             } else if (currentPage > numPages) {
-                sender.sendMessage(plugin.getTag() + "§cInvalid page number.");
+                Messaging.send(plugin, sender, "Invalid page number.");
             } else {
                 sender.sendMessage("§cAvailable Bounties (Page §f#" + currentPage + "§c of §f" + numPages + "§c):");
                 for (int i = pageStart; i <= pageEnd; i++) {
                     Bounty b = bounties.get(i);
                     String msg = "§f" + (i + 1) + ". §e";
-                    if (!plugin.isUsingAnonymousTargets()) {
+                    if (!plugin.getBountyManager().usesAnonymousTargets()) {
                         msg += b.getTarget() + "§f - §e";
                     }
                     msg += iConomy.getBank().format(b.getValue()) + "§f - §eFee: " + iConomy.getBank().format(b.getContractFee());

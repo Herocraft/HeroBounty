@@ -60,7 +60,9 @@ public abstract class BaseCommand {
         for (int i = 0; i < n; i++) {
             String identifier = identifiers.get(i).toLowerCase();
             if (lower.matches(identifier + "(\\s+.*|\\s*)")) {
-                index = i;
+                if (index == -1 || identifier.length() > identifiers.get(index).length()) {
+                    index = i;
+                }
             }
         }
 
@@ -90,7 +92,7 @@ public abstract class BaseCommand {
     public String getUsage() {
         return usage;
     }
-    
+
     public List<String> getNotes() {
         return notes;
     }

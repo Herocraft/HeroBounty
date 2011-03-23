@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
+import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
 
@@ -29,37 +30,41 @@ public class LocateCommand extends BaseCommand {
             Player hunter = (Player) sender;
             String hunterName = hunter.getName();
 
-            List<Bounty> acceptedBounties = plugin.listBountiesAcceptedByPlayer(hunterName);
-            int locationRounding = plugin.getLocationRounding();
-            if (acceptedBounties.isEmpty()) {
-                hunter.sendMessage(plugin.getTag() + "§cYou currently have no accepted bounties.");
-            } else if (args.length == 1) {
-                int id = HeroBounty.parseBountyId(args[0], acceptedBounties);
-                if (id != -1) {
-                    Bounty b = acceptedBounties.get(id);
-                    Player target = plugin.getServer().getPlayer(b.getTarget());
-                    if (target != null) {
-                        Location loc = roundLocation(target.getLocation(), locationRounding);
-                        hunter.setCompassTarget(loc);
-                        hunter.sendMessage(plugin.getTag() + "§cCompass now points near " + target.getDisplayName() + ".");
+            if (plugin.getPermissionManager().canLocateTargets(hunter)) {
+                List<Bounty> acceptedBounties = plugin.getBountyManager().listBountiesAcceptedBy(hunterName);
+                int locationRounding = plugin.getBountyManager().getLocationRounding();
+                if (acceptedBounties.isEmpty()) {
+                    Messaging.send(plugin, hunter, "You currently have no accepted bounties.");
+                } else if (args.length == 1) {
+                    int id = BountyManager.parseBountyId(args[0], acceptedBounties);
+                    if (id != -1) {
+                        Bounty b = acceptedBounties.get(id);
+                        Player target = plugin.getServer().getPlayer(b.getTarget());
+                        if (target != null) {
+                            Location loc = roundLocation(target.getLocation(), locationRounding);
+                            hunter.setCompassTarget(loc);
+                            Messaging.send(plugin, hunter, "Compass now points near $1.", target.getDisplayName());
+                        } else {
+                            Messaging.send(plugin, hunter, "Target is offline.");
+                        }
                     } else {
-                        hunter.sendMessage(plugin.getTag() + "§cTarget is offline.");
+                        Messaging.send(plugin, hunter, "Invalid bounty id#.");
                     }
                 } else {
-                    hunter.sendMessage(plugin.getTag() + "§cInvalid bounty id#.");
-                }
-            } else {
-                hunter.sendMessage("§cLast Known Target Locations: (x, z)");
-                for (int i = 0; i < acceptedBounties.size(); i++) {
-                    Bounty b = acceptedBounties.get(i);
-                    Player target = plugin.getServer().getPlayer(b.getTarget());
-                    if (target == null) {
-                        Messaging.send(hunter, "§f" + (i + 1) + ". §e" + b.getTarget() + ": offline");
-                    } else {
-                        Location loc = roundLocation(target.getLocation(), locationRounding);
-                        Messaging.send(hunter, "§f" + (i + 1) + ". §e" + b.getTarget() + ": (" + loc.getBlockX() + ", " + loc.getBlockZ() + ")");
+                    hunter.sendMessage("§cLast Known Target Locations: (x, z)");
+                    for (int i = 0; i < acceptedBounties.size(); i++) {
+                        Bounty b = acceptedBounties.get(i);
+                        Player target = plugin.getServer().getPlayer(b.getTarget());
+                        if (target == null) {
+                            hunter.sendMessage("§f" + (i + 1) + ". §e" + b.getTarget() + ": offline");
+                        } else {
+                            Location loc = roundLocation(target.getLocation(), locationRounding);
+                            hunter.sendMessage("§f" + (i + 1) + ". §e" + b.getTarget() + ": (" + loc.getBlockX() + ", " + loc.getBlockZ() + ")");
+                        }
                     }
                 }
+            } else {
+                Messaging.send(plugin, hunter, "You don't have permission to use this command.");
             }
         }
     }

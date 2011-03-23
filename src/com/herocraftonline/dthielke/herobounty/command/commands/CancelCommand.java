@@ -8,9 +8,10 @@ import org.bukkit.entity.Player;
 
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
+import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.nijiko.coelho.iConomy.iConomy;
-import com.nijiko.coelho.iConomy.system.Account;
+import com.herocraftonline.dthielke.herobounty.util.EconomyManager;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
 
 public class CancelCommand extends BaseCommand {
 
@@ -29,8 +30,8 @@ public class CancelCommand extends BaseCommand {
         if (sender instanceof Player) {
             Player owner = (Player) sender;
             String ownerName = owner.getName();
-            List<Bounty> bounties = plugin.getBounties();
-            int id = HeroBounty.parseBountyId(args[0], bounties);
+            List<Bounty> bounties = plugin.getBountyManager().getBounties();
+            int id = BountyManager.parseBountyId(args[0], bounties);
             if (id != -1) {
                 Bounty bounty = bounties.get(id);
                 int value = bounty.getValue();
@@ -38,27 +39,31 @@ public class CancelCommand extends BaseCommand {
                     bounties.remove(bounty);
                     Collections.sort(bounties);
 
-                    Account ownerAccount = iConomy.getBank().getAccount(ownerName);
-                    ownerAccount.add(value);
-                    owner.sendMessage(plugin.getTag() + "§cYou have been reimbursed §e" + iConomy.getBank().format(value) + " §cfor your bounty.");
+                    EconomyManager econ = plugin.getEconomyManager();
+                    boolean reimbursed = econ.add(ownerName, value) != Double.NaN;
+                    if (reimbursed) {
+                        Messaging.send(plugin, owner, "You have been reimbursed $1 for your bounty.", econ.format(value));
+                    } else {
+                        Messaging.send(plugin, owner, "You have cancelled your bounty on $1.", bounty.getTargetDisplayName());
+                    }
 
                     List<String> hunters = bounty.getHunters();
                     if (!hunters.isEmpty()) {
                         int inconvenience = (int) Math.floor((double) bounty.getPostingFee() / hunters.size());
                         for (String hunterName : bounty.getHunters()) {
-                            Account hunterAccount = iConomy.getBank().getAccount(hunterName);
-                            hunterAccount.add(bounty.getContractFee());
-
-                            if (plugin.shouldPayInconvenience()) {
-                                hunterAccount.add(inconvenience);
+                            reimbursed = econ.add(hunterName, bounty.getContractFee()) != Double.NaN;
+                            if (plugin.getBountyManager().shouldPayInconvenience()) {
+                                econ.add(hunterName, inconvenience);
                             }
 
                             Player hunter = plugin.getServer().getPlayer(hunterName);
                             if (hunter != null) {
-                                hunter.sendMessage(plugin.getTag() + "§cThe bounty you were pursuing targetting §e" + bounty.getTarget() + " §chas been cancelled.");
-                                hunter.sendMessage(plugin.getTag() + "§cYou have been reimbursed your contract fee.");
-                                if (plugin.shouldPayInconvenience() && inconvenience > 0) {
-                                    hunter.sendMessage(plugin.getTag() + "§cYou have received §e" + iConomy.getBank().format(inconvenience) + " §cfor the inconvenience.");
+                                Messaging.send(plugin, hunter, "The bounty on $1 has been cancelled.", bounty.getTargetDisplayName());
+                                if (reimbursed) {
+                                    Messaging.send(plugin, hunter, "Your contract fee has been refunded.");
+                                    if (plugin.getBountyManager().shouldPayInconvenience() && inconvenience > 0) {
+                                        Messaging.send(plugin, hunter, "You have received $1 for the inconvenience.", econ.format(inconvenience));
+                                    }
                                 }
                             }
 
@@ -66,10 +71,10 @@ public class CancelCommand extends BaseCommand {
                     }
                     plugin.saveData();
                 } else {
-                    owner.sendMessage(plugin.getTag() + "§cYou can only cancel bounties you created.");
+                    Messaging.send(plugin, owner, "You can only cancel bounties you created.");
                 }
             } else {
-                owner.sendMessage(plugin.getTag() + "§cBounty not found.");
+                Messaging.send(plugin, owner, "Bounty not found.");
             }
         }
     }

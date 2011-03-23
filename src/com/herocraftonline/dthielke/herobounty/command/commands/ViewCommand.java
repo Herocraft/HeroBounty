@@ -8,7 +8,8 @@ import org.bukkit.entity.Player;
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.nijiko.coelho.iConomy.iConomy;
+import com.herocraftonline.dthielke.herobounty.util.EconomyManager;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
 
 public class ViewCommand extends BaseCommand {
 
@@ -29,17 +30,18 @@ public class ViewCommand extends BaseCommand {
             Player hunter = (Player) sender;
             String hunterName = hunter.getName();
 
-            List<Bounty> acceptedBounties = plugin.listBountiesAcceptedByPlayer(hunterName);
+            List<Bounty> acceptedBounties = plugin.getBountyManager().listBountiesAcceptedBy(hunterName);
             if (acceptedBounties.isEmpty()) {
-                hunter.sendMessage(plugin.getTag() + "§cYou currently have no accepted bounties.");
+                Messaging.send(plugin, hunter, "You currently have no accepted bounties.");
             } else {
+                EconomyManager econ = plugin.getEconomyManager();
                 hunter.sendMessage("§cAccepted Bounties:");
                 for (int i = 0; i < acceptedBounties.size(); i++) {
-                    Bounty b = acceptedBounties.get(i);
-                    int bountyDuration = b.getMinutesLeft(hunterName);
+                    Bounty bounty = acceptedBounties.get(i);
+                    int bountyDuration = bounty.getMinutesLeft(hunterName);
                     int bountyRelativeTime = (bountyDuration < 60) ? bountyDuration : (bountyDuration < (60 * 24)) ? bountyDuration / 60 : (bountyDuration < (60 * 24 * 7)) ? bountyDuration / (60 * 24) : bountyDuration / (60 * 24 * 7);
                     String bountyRelativeAmount = (bountyDuration < 60) ? " minutes" : (bountyDuration < (60 * 24)) ? " hours" : (bountyDuration < (60 * 24 * 7)) ? " days" : " weeks";
-                    hunter.sendMessage("§f" + (i + 1) + ". §e" + b.getTarget() + " - " + iConomy.getBank().format(b.getValue()) + " - " + bountyRelativeTime + bountyRelativeAmount);
+                    hunter.sendMessage("§f" + (i + 1) + ". §e" + bounty.getTarget() + " - " + econ.format(bounty.getValue()) + " - " + bountyRelativeTime + bountyRelativeAmount);
                 }
             }
         }

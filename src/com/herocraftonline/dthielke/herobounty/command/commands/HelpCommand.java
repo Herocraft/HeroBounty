@@ -18,6 +18,7 @@ public class HelpCommand extends BaseCommand {
         minArgs = 0;
         maxArgs = 0;
         identifiers.add("bounty help");
+        identifiers.add("bounty");
     }
 
     @Override

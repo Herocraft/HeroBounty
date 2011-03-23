@@ -9,8 +9,8 @@ import org.bukkit.entity.Player;
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.nijiko.coelho.iConomy.iConomy;
-import com.nijiko.coelho.iConomy.system.Account;
+import com.herocraftonline.dthielke.herobounty.util.EconomyManager;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
 
 public class NewCommand extends BaseCommand {
 
@@ -28,54 +28,64 @@ public class NewCommand extends BaseCommand {
     public void execute(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player owner = (Player) sender;
+            String ownerName = owner.getName();
             Player target = plugin.getServer().getPlayer(args[0]);
             if (target != null) {
                 String targetName = target.getName();
                 if (target != owner) {
-                    List<Bounty> bounties = plugin.getBounties();
-                    for (Bounty b : bounties) {
-                        if (b.getTarget().equalsIgnoreCase(targetName)) {
-                            owner.sendMessage(plugin.getTag() + "§cThere is already a bounty on §f" + targetName + "§c.");
-                            return;
+                    if (plugin.getPermissionManager().canCreateBounty(owner)) {
+                        if (plugin.getPermissionManager().canBeTargetted(target)) {
+                            List<Bounty> bounties = plugin.getBountyManager().getBounties();
+                            for (Bounty b : bounties) {
+                                if (b.getTarget().equalsIgnoreCase(targetName)) {
+                                    Messaging.send(plugin, owner, "There is already a bounty on $1.", targetName);
+                                    return;
+                                }
+                            }
+
+                            int value;
+                            try {
+                                value = Integer.parseInt(args[1]);
+                                if (value < plugin.getBountyManager().getMinimumValue()) {
+                                    throw new NumberFormatException();
+                                }
+                            } catch (NumberFormatException e) {
+                                Messaging.send(plugin, owner, "Value must be greater than $1.", String.valueOf(plugin.getBountyManager().getMinimumValue()));
+                                return;
+                            }
+                            EconomyManager econ = plugin.getEconomyManager();
+                            if (econ.hasAmount(ownerName, value)) {
+                                int postingFee = (int) (plugin.getBountyManager().getPlacementFee() * value);
+                                int award = value - postingFee;
+                                int contractFee = (int) (plugin.getBountyManager().getContractFee() * award);
+                                int deathPenalty = (int) (plugin.getBountyManager().getDeathFee() * award);
+
+                                Bounty bounty = new Bounty(owner.getName(), owner.getDisplayName(), targetName, target.getDisplayName(), award, postingFee, contractFee, deathPenalty);
+                                bounties.add(bounty);
+                                Collections.sort(bounties);
+
+                                boolean feeCharged = econ.subtract(ownerName, value, false) != Double.NaN;
+                                Messaging.send(plugin, owner, "Placed a bounty on $1's head for $2.", targetName, econ.format(award));
+                                if (feeCharged) {
+                                    Messaging.send(plugin, owner, "You have been charged $1 for posting this bounty.", econ.format(postingFee));
+                                }
+                                Messaging.broadcast(plugin, "A new bounty has been placed for $1.", econ.format(award));
+
+                                plugin.saveData();
+                            } else {
+                                Messaging.send(plugin, owner, "You don't have enough funds to do that.");
+                            }
+                        } else {
+                            Messaging.send(plugin, owner, "This player can't be targetted.");
                         }
-                    }
-
-                    int value;
-                    try {
-                        value = Integer.parseInt(args[1]);
-                        if (value < plugin.getBountyMin()) {
-                            throw new NumberFormatException();
-                        }
-                    } catch (NumberFormatException e) {
-                        owner.sendMessage(plugin.getTag() + "§cValue must be a number greater than §f" + plugin.getBountyMin() + "§c.");
-                        return;
-                    }
-                    Account ownerAccount = iConomy.getBank().getAccount(owner.getName());
-                    double balance = ownerAccount.getBalance();
-                    if (balance >= value) {
-                        int postingFee = (int) (plugin.getBountyFeePercent() * value);
-                        int award = value - postingFee;
-                        int contractFee = (int) (plugin.getContractFeePercent() * award);
-                        int deathPenalty = (int) (plugin.getDeathPenaltyPercent() * award);
-
-                        Bounty bounty = new Bounty(owner.getName(), owner.getDisplayName(), targetName, target.getDisplayName(), award, postingFee, contractFee, deathPenalty);
-                        bounties.add(bounty);
-                        Collections.sort(bounties);
-
-                        ownerAccount.subtract(value);
-                        owner.sendMessage(plugin.getTag() + "§cPlaced a bounty on §e" + targetName + "§c's head for §e" + iConomy.getBank().format(award) + "§c.");
-                        owner.sendMessage(plugin.getTag() + "§cYou have been charged a §e" + iConomy.getBank().format(postingFee) + "§c fee for posting this bounty.");
-                        plugin.getServer().broadcastMessage(plugin.getTag() + "§eA new bounty has been placed for §f" + iConomy.getBank().format(award) + "§e.");
-                        
-                        plugin.saveData();
                     } else {
-                        owner.sendMessage(plugin.getTag() + "§cYou don't have enough funds to do that.");
+                        Messaging.send(plugin, owner, "You don't have permission to create bounties.");
                     }
                 } else {
-                    owner.sendMessage(plugin.getTag() + "§cYou cannot place a bounty on yourself.");
+                    Messaging.send(plugin, owner, "You can't place a bounty on yourself.");
                 }
             } else {
-                owner.sendMessage(plugin.getTag() + "§cTarget player not found.");
+                Messaging.send(plugin, owner, "Target player not found.");
             }
         }
     }
