@@ -17,7 +17,7 @@ public class Messaging {
     private static String parameterizeMessage(HeroBounty plugin, String msg, String ... params) {
         msg = plugin.getTag() + "§c" + msg;
         for (int i = 0; i < params.length; i++) {
-            msg.replace("$" + i, "§f" + params[i] + "§c");
+            msg = msg.replace("$" + i, "§f" + params[i] + "§c");
         }
         return msg;
     }
