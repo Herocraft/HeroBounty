@@ -8,7 +8,7 @@ import org.bukkit.entity.Player;
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.EconomyManager;
+import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
 
 public class ViewCommand extends BaseCommand {
@@ -34,7 +34,7 @@ public class ViewCommand extends BaseCommand {
             if (acceptedBounties.isEmpty()) {
                 Messaging.send(plugin, hunter, "You currently have no accepted bounties.");
             } else {
-                EconomyManager econ = plugin.getEconomyManager();
+                Economy econ = plugin.getEconomy();
                 hunter.sendMessage("§cAccepted Bounties:");
                 for (int i = 0; i < acceptedBounties.size(); i++) {
                     Bounty bounty = acceptedBounties.get(i);

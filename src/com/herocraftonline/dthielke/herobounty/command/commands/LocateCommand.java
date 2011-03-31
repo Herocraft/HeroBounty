@@ -30,7 +30,7 @@ public class LocateCommand extends BaseCommand {
             Player hunter = (Player) sender;
             String hunterName = hunter.getName();
 
-            if (plugin.getPermissionManager().canLocateTargets(hunter)) {
+            if (plugin.getPermissions().canLocateTargets(hunter)) {
                 List<Bounty> acceptedBounties = plugin.getBountyManager().listBountiesAcceptedBy(hunterName);
                 int locationRounding = plugin.getBountyManager().getLocationRounding();
                 if (acceptedBounties.isEmpty()) {

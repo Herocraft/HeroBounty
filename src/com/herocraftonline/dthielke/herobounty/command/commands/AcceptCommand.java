@@ -11,7 +11,7 @@ import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.EconomyManager;
+import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
 
 public class AcceptCommand extends BaseCommand {
@@ -38,8 +38,8 @@ public class AcceptCommand extends BaseCommand {
                 if (!bounty.getOwner().equals(hunterName)) {
                     if (!bounty.getTarget().equals(hunterName)) {
                         if (!bounty.isHunter(hunterName)) {
-                            if (plugin.getPermissionManager().canAcceptBounty(hunter)) {
-                                EconomyManager econ = plugin.getEconomyManager();
+                            if (plugin.getPermissions().canAcceptBounty(hunter)) {
+                                Economy econ = plugin.getEconomy();
                                 int contractFee = bounty.getContractFee();
                                 if (econ.hasAmount(hunterName, contractFee)) {
                                     bounty.addHunter(hunterName);

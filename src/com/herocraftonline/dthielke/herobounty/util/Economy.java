@@ -3,13 +3,13 @@ package com.herocraftonline.dthielke.herobounty.util;
 import com.nijiko.coelho.iConomy.iConomy;
 import com.nijiko.coelho.iConomy.system.Account;
 
-public class EconomyManager {
+public class Economy {
 
     private iConomy iconomy;
 
-    public EconomyManager() {}
+    public Economy() {}
 
-    public EconomyManager(iConomy iconomy) {
+    public Economy(iConomy iconomy) {
         this.iconomy = iconomy;
     }
 

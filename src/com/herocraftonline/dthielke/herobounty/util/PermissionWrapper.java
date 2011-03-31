@@ -4,12 +4,14 @@ import org.bukkit.entity.Player;
 
 import com.nijiko.permissions.PermissionHandler;
 
-public class PermissionManager {
+public class PermissionWrapper {
 
     private PermissionHandler security;
+    private boolean respectUntargettables;
 
-    public PermissionManager(PermissionHandler security) {
+    public PermissionWrapper(PermissionHandler security) {
         this.security = security;
+        this.respectUntargettables = true;
     }
 
     public boolean canCreateBounty(Player p) {
@@ -29,7 +31,7 @@ public class PermissionManager {
     }
     
     public boolean canBeTargetted(Player p) {
-        if (security != null) {
+        if (respectUntargettables && security != null) {
             return !security.has(p, "herobounty.untargettable");
         } else {
             return true;
@@ -42,6 +44,10 @@ public class PermissionManager {
         } else {
             return true;
         }
+    }
+
+    public void setRespectUntargettables(boolean respectUntargettables) {
+        this.respectUntargettables = respectUntargettables;
     }
     
 }

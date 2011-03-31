@@ -20,7 +20,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.config.Configuration;
 
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.CommandManager;
@@ -32,19 +31,22 @@ import com.herocraftonline.dthielke.herobounty.command.commands.ListCommand;
 import com.herocraftonline.dthielke.herobounty.command.commands.LocateCommand;
 import com.herocraftonline.dthielke.herobounty.command.commands.NewCommand;
 import com.herocraftonline.dthielke.herobounty.command.commands.ViewCommand;
-import com.herocraftonline.dthielke.herobounty.util.EconomyManager;
-import com.herocraftonline.dthielke.herobounty.util.PermissionManager;
+import com.herocraftonline.dthielke.herobounty.util.ConfigManager;
+import com.herocraftonline.dthielke.herobounty.util.Economy;
+import com.herocraftonline.dthielke.herobounty.util.PermissionWrapper;
 import com.nijiko.coelho.iConomy.iConomy;
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 
 public class HeroBounty extends JavaPlugin {
+    
     private HeroBountyEntityListener entityListener;
     private HeroBountyServerListener serverListener;
     private CommandManager commandManager;
-    private PermissionManager permissionManager;
-    private EconomyManager economyManager;
+    private PermissionWrapper permissions;
+    private Economy economy;
     private BountyManager bountyManager;
+    private ConfigManager configManager;
     private String tag;
     private Logger log;
 
@@ -56,43 +58,26 @@ public class HeroBounty extends JavaPlugin {
         return commandManager;
     }
 
-    public EconomyManager getEconomyManager() {
-        return economyManager;
+    public Economy getEconomy() {
+        return economy;
     }
-
-    public PermissionManager getPermissionManager() {
-        return permissionManager;
+    
+    public PermissionWrapper getPermissions() {
+        return permissions;
     }
 
     public String getTag() {
         return tag;
     }
 
-    public void loadConfig() {
-        Configuration config = getConfiguration();
-        bountyManager = new BountyManager(this);
-        bountyManager.setBounties(BountyFileHandler.load(new File(getDataFolder(), "data.yml")));
-        bountyManager.setMinimumValue(config.getInt("bounty-min", 20));
-        bountyManager.setPlacementFee(config.getInt("bounty-fee-percent", 10) / 100f);
-        bountyManager.setContractFee(config.getInt("contract-fee-percent", 5) / 100f);
-        bountyManager.setDeathFee(config.getInt("death-penalty-percent", 5) / 100f);
-        bountyManager.setDuration(config.getInt("bounty-duration", 24 * 60));
-        bountyManager.setAnonymousTargets(config.getBoolean("anonymous-targets", false));
-        bountyManager.setPayInconvenience(config.getBoolean("pay-inconvenience", true));
-        bountyManager.setNegativeBalances(config.getBoolean("allow-negative-balances", true));
-        bountyManager.setLocationRounding(config.getInt("location-rounding", 100));
-        tag = config.getString("bounty-tag", "&e[Bounty] ").replace('&', '§');
-    }
-
     public void loadIConomy() {
-        economyManager = new EconomyManager();
+        economy = new Economy();
         Plugin plugin = this.getServer().getPluginManager().getPlugin("iConomy");
         if (plugin != null) {
             if (plugin.isEnabled()) {
                 iConomy iconomy = (iConomy) plugin;
-                economyManager.setIconomy(iconomy);
+                economy.setIconomy(iconomy);
                 bountyManager.startExpirationTimer();
-                registerCommands();
                 log(Level.INFO, "iConomy " + iconomy.getDescription().getVersion() + " found.");
             }
         }
@@ -104,8 +89,9 @@ public class HeroBounty extends JavaPlugin {
             if (plugin.isEnabled()) {
                 Permissions permissions = (Permissions) plugin;
                 PermissionHandler security = permissions.getHandler();
-                PermissionManager ph = new PermissionManager(security);
-                this.permissionManager = ph;
+                PermissionWrapper ph = new PermissionWrapper(security);
+                ph.setRespectUntargettables(configManager.shouldRespectUntargettables());
+                this.permissions = ph;
                 log(Level.INFO, "Permissions " + Permissions.version + " found.");
             }
         }
@@ -134,10 +120,15 @@ public class HeroBounty extends JavaPlugin {
         log(Level.INFO, pdfFile.getName() + " version " + pdfFile.getVersion() + " enabled.");
 
         registerEvents();
-        loadConfig();
+        registerCommands();
+        configManager.load();
         loadPermissions();
         loadIConomy();
-        commandManager = new CommandManager();
+    }
+    
+    public void onLoad() {
+        bountyManager = new BountyManager(this);
+        configManager = new ConfigManager(this);
     }
 
     public void saveData() {
@@ -166,7 +157,8 @@ public class HeroBounty extends JavaPlugin {
         serverListener = new HeroBountyServerListener(this);
         PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
-        pluginManager.registerEvent(Type.ENTITY_DAMAGED, entityListener, Priority.Normal, this);
+        pluginManager.registerEvent(Type.ENTITY_DAMAGE, entityListener, Priority.Normal, this);
         pluginManager.registerEvent(Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
     }
+    
 }

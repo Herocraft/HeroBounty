@@ -10,7 +10,7 @@ import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.EconomyManager;
+import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
 
 public class CancelCommand extends BaseCommand {
@@ -39,7 +39,7 @@ public class CancelCommand extends BaseCommand {
                     bounties.remove(bounty);
                     Collections.sort(bounties);
 
-                    EconomyManager econ = plugin.getEconomyManager();
+                    Economy econ = plugin.getEconomy();
                     boolean reimbursed = econ.add(ownerName, value) != Double.NaN;
                     if (reimbursed) {
                         Messaging.send(plugin, owner, "You have been reimbursed $1 for your bounty.", econ.format(value));

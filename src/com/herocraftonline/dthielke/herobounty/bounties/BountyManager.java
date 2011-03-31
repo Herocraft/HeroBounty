@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
-import com.herocraftonline.dthielke.herobounty.util.EconomyManager;
+import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
 import com.nijiko.coelho.iConomy.iConomy;
 import com.nijiko.coelho.iConomy.system.Account;
@@ -57,7 +57,7 @@ public class BountyManager {
         Collections.sort(bounties);
         plugin.saveData();
 
-        EconomyManager econ = plugin.getEconomyManager();
+        Economy econ = plugin.getEconomy();
         double penalty = econ.subtract(target.getName(), bounty.getDeathPenalty(), negativeBalances);
         double award = econ.add(hunter.getName(), bounty.getValue());
         if (penalty != Double.NaN && award != Double.NaN) {

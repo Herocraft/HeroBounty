@@ -1,0 +1,30 @@
+#minimum amount users must pay to post a bounty (includes reward + fee)
+bounty-min: 20
+
+#percent of the amount paid that is taken as a fee for posting a bounty
+#the remaining portion makes up the reward for the bounty
+bounty-fee-percent: 10
+
+#percent of the award value hunters must pay to accept a contract
+contract-fee-percent: 5
+
+#percent of the award value that the killed target loses
+death-penalty-percent: 5
+
+#the amount of time bounty hunters have to complete a bounty (in minutes)
+bounty-duration: 1440
+
+#if true, hides the target names until a bounty is accepted
+anonymous-targets: false
+
+#tag placed before all bounty related messages (supports iChat coloring)
+bounty-tag: '&b[BOUNTY] '
+
+#if true, splits the owner's posting fee between hunters when a bounty is cancelled
+pay-inconvenience: true
+
+#if true, allows a target's balance to go negative if they cannot afford the death penalty
+allow-negative-balances: true
+
+#round locations displayed by the /bounty locate command to the nearest location-rounding
+location-rounding: 100

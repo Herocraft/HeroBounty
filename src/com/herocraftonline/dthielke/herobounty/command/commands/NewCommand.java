@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.EconomyManager;
+import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
 
 public class NewCommand extends BaseCommand {
@@ -33,8 +33,8 @@ public class NewCommand extends BaseCommand {
             if (target != null) {
                 String targetName = target.getName();
                 if (target != owner) {
-                    if (plugin.getPermissionManager().canCreateBounty(owner)) {
-                        if (plugin.getPermissionManager().canBeTargetted(target)) {
+                    if (plugin.getPermissions().canCreateBounty(owner)) {
+                        if (plugin.getPermissions().canBeTargetted(target)) {
                             List<Bounty> bounties = plugin.getBountyManager().getBounties();
                             for (Bounty b : bounties) {
                                 if (b.getTarget().equalsIgnoreCase(targetName)) {
@@ -53,7 +53,7 @@ public class NewCommand extends BaseCommand {
                                 Messaging.send(plugin, owner, "Value must be greater than $1.", String.valueOf(plugin.getBountyManager().getMinimumValue()));
                                 return;
                             }
-                            EconomyManager econ = plugin.getEconomyManager();
+                            Economy econ = plugin.getEconomy();
                             if (econ.hasAmount(ownerName, value)) {
                                 int postingFee = (int) (plugin.getBountyManager().getPlacementFee() * value);
                                 int award = value - postingFee;
