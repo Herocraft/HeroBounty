@@ -1,6 +1,6 @@
 package com.herocraftonline.dthielke.herobounty;
 
-import org.bukkit.event.server.PluginEvent;
+import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.event.server.ServerListener;
 import org.bukkit.plugin.Plugin;
 
@@ -12,7 +12,7 @@ public class HeroBountyServerListener extends ServerListener {
         this.plugin = plugin;
     }
     
-    public void onPluginEnabled(PluginEvent event) {
+    public void onPluginEnable(PluginEnableEvent event) {
         Plugin plugin = event.getPlugin();
         String name = plugin.getDescription().getName();
         
