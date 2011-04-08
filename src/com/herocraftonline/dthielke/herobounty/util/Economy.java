@@ -23,7 +23,11 @@ public class Economy {
 
     public double add(String name, double amount) {
         if (iconomy != null) {
-            iConomy.getBank().getAccount(name).add(amount);
+            Account acct = iConomy.getBank().getAccount(name);
+            if (acct == null) {
+                return Double.NaN;
+            }
+            acct.add(amount);
             return amount;
         } else {
             return Double.NaN;
@@ -33,6 +37,9 @@ public class Economy {
     public double subtract(String name, double amount, boolean allowNegative) {
         if (iconomy != null) {
             Account acct = iConomy.getBank().getAccount(name);
+            if (acct == null) {
+                return Double.NaN;
+            }
             double balance = acct.getBalance();
             if (balance < amount && !allowNegative) {
                 amount = balance;
@@ -46,7 +53,11 @@ public class Economy {
 
     public boolean hasAmount(String name, double amount) {
         if (iconomy != null) {
-            return iConomy.getBank().getAccount(name).getBalance() >= amount;
+            Account account = iConomy.getBank().getAccount(name);
+            if (account == null) {
+                return false;
+            }
+            return account.getBalance() >= amount;
         } else {
             return true;
         }

@@ -38,6 +38,14 @@ public class PermissionWrapper {
         }
     }
     
+    public boolean canViewBountyList(Player p) {
+        if (security != null) {
+            return security.has(p, "herobounty.list");
+        } else {
+            return true;
+        }
+    }
+    
     public boolean canLocateTargets(Player p) {
         if (security != null) {
             return security.has(p, "herobounty.locate");
