@@ -34,7 +34,7 @@ import com.herocraftonline.dthielke.herobounty.command.commands.ViewCommand;
 import com.herocraftonline.dthielke.herobounty.util.ConfigManager;
 import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.PermissionWrapper;
-import com.nijiko.coelho.iConomy.iConomy;
+import com.iConomy.iConomy;
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 
