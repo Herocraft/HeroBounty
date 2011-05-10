@@ -1,164 +1,220 @@
-/**
- * Copyright (C) 2011 DThielke <dave.thielke@gmail.com>
- * 
- * This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivs 3.0 Unported License.
- * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/3.0/ or send a letter to
- * Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
- **/
+package com.herocraftonline.dthielke.herobounty.bounties;
 
-package com.herocraftonline.dthielke.herobounty;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.TimerTask;
 
-import java.io.File;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.bukkit.entity.Player;
 
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.event.Event.Type;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
-
-import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
-import com.herocraftonline.dthielke.herobounty.command.CommandManager;
-import com.herocraftonline.dthielke.herobounty.command.commands.AbandonCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.AcceptCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.CancelCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.HelpCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.ListCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.LocateCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.NewCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.ViewCommand;
-import com.herocraftonline.dthielke.herobounty.util.ConfigManager;
+import com.herocraftonline.dthielke.herobounty.Bounty;
+import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.util.Economy;
-import com.herocraftonline.dthielke.herobounty.util.PermissionWrapper;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
 import com.iConomy.iConomy;
-import com.nijiko.permissions.PermissionHandler;
-import com.nijikokun.bukkit.Permissions.Permissions;
+import com.iConomy.system.Account;
 
-public class HeroBounty extends JavaPlugin {
+@SuppressWarnings("unused")
+public class BountyManager {
     
-    private HeroBountyEntityListener entityListener;
-    private HeroBountyServerListener serverListener;
-    private CommandManager commandManager;
-    private PermissionWrapper permissions;
-    private Economy economy;
-    private BountyManager bountyManager;
-    private ConfigManager configManager;
-    private String tag;
-    private Logger log;
+    private static final long EXPIRATION_DELAY = 10 * 1000;
+    private static final long EXPIRATION_PERIOD = 5 * 60 * 1000;
 
-    public BountyManager getBountyManager() {
-        return bountyManager;
+    private HeroBounty plugin;
+    private List<Bounty> bounties;
+    private double minimumValue;
+    private double placementFee;
+    private double contractFee;
+    private double deathFee;
+    private boolean payInconvenience;
+    private boolean anonymousTargets;
+    private boolean negativeBalances;
+    private int duration;
+    private int locationRounding;
+
+    public BountyManager(HeroBounty plugin) {
+        this.plugin = plugin;
     }
 
-    public CommandManager getCommandManager() {
-        return commandManager;
-    }
-
-    public Economy getEconomy() {
-        return economy;
+    public void startExpirationTimer() {
+        TimerTask expirationChecker = new ExpirationChecker(plugin);
+        plugin.getServer().getScheduler().scheduleAsyncRepeatingTask(plugin, expirationChecker, EXPIRATION_DELAY, EXPIRATION_PERIOD);
     }
     
-    public PermissionWrapper getPermissions() {
-        return permissions;
+    public void stopExpirationTimer() {
+        plugin.getServer().getScheduler().cancelTasks(plugin);
+    }
+    
+    public boolean completeBounty(int id, String hunterName) {
+        Bounty bounty = bounties.get(id);
+        Player hunter = plugin.getServer().getPlayer(hunterName);
+        Player target = plugin.getServer().getPlayer(bounty.getTarget());
+        if (hunter == null || target == null) {
+            return false;
+        }
+        
+        bounties.remove(id);
+        Collections.sort(bounties);
+        plugin.saveData();
+
+        Economy econ = plugin.getEconomy();
+        double penalty = econ.subtract(target.getName(), bounty.getDeathPenalty(), negativeBalances);
+        double award = econ.add(hunter.getName(), bounty.getValue());
+        if (penalty != Double.NaN && award != Double.NaN) {
+            String awardStr = econ.format(award);
+            String penaltyStr = econ.format(penalty);
+            Messaging.broadcast(plugin, "$1 has collected a bounty on $2 for $3!", hunter.getName(), bounty.getTargetDisplayName(), awardStr);
+        } else {
+            Messaging.broadcast(plugin, "$1 has collected a bounty on $2's head!", hunter.getName(), bounty.getTargetDisplayName());
+        }
+        return true;
     }
 
-    public String getTag() {
-        return tag;
-    }
-
-    public void loadIConomy() {
-        economy = new Economy();
-        Plugin plugin = this.getServer().getPluginManager().getPlugin("iConomy");
-        if (plugin != null) {
-            if (plugin.isEnabled()) {
-                iConomy iconomy = (iConomy) plugin;
-                economy.setIconomy(iconomy);
-                bountyManager.startExpirationTimer();
-                log(Level.INFO, "iConomy " + iconomy.getDescription().getVersion() + " found.");
+    public boolean isTarget(Player player) {
+        String name = player.getName();
+        for (Bounty bounty : bounties) {
+            if (bounty.getTarget().equals(name)) {
+                return true;
             }
         }
+        return false;
     }
 
-    public void loadPermissions() {
-        Plugin plugin = this.getServer().getPluginManager().getPlugin("Permissions");
-        if (plugin != null) {
-            if (plugin.isEnabled()) {
-                Permissions permissions = (Permissions) plugin;
-                PermissionHandler security = permissions.getHandler();
-                PermissionWrapper ph = new PermissionWrapper(security);
-                ph.setRespectUntargettables(configManager.shouldRespectUntargettables());
-                this.permissions = ph;
-                log(Level.INFO, "Permissions " + Permissions.version + " found.");
+    public List<Bounty> listBountiesAcceptedBy(String hunter) {
+        List<Bounty> acceptedBounties = new ArrayList<Bounty>();
+        for (Bounty bounty : bounties) {
+            if (bounty.isHunter(hunter)) {
+                acceptedBounties.add(bounty);
             }
         }
+        return acceptedBounties;
     }
 
-    public void log(Level level, String log) {
-        this.log.log(level, "[HeroBounty] " + log);
+    public static int parseBountyId(String idStr, List<Bounty> bounties) {
+        int id;
+        try {
+            id = Integer.parseInt(idStr) - 1;
+            if (id < 0 || id >= bounties.size()) {
+                throw new IndexOutOfBoundsException();
+            }
+        } catch (Exception e) {
+            id = -1;
+        }
+        return id;
     }
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        return commandManager.dispatch(sender, command, label, args);
+    public List<Bounty> getBounties() {
+        return bounties;
     }
 
-    @Override
-    public void onDisable() {
-        PluginDescriptionFile pdfFile = this.getDescription();
-        log(Level.INFO, pdfFile.getName() + " version " + pdfFile.getVersion() + " disabled.");
+    public void setBounties(List<Bounty> bounties) {
+        this.bounties = bounties;
     }
 
-    @Override
-    public void onEnable() {
-        log = Logger.getLogger("Minecraft");
-
-        PluginDescriptionFile pdfFile = this.getDescription();
-        log(Level.INFO, pdfFile.getName() + " version " + pdfFile.getVersion() + " enabled.");
-
-        registerEvents();
-        registerCommands();
-        configManager.load();
-        loadPermissions();
-        loadIConomy();
-    }
-    
-    public void onLoad() {
-        bountyManager = new BountyManager(this);
-        configManager = new ConfigManager(this);
+    public double getMinimumValue() {
+        return minimumValue;
     }
 
-    public void saveData() {
-        File file = new File(getDataFolder(), "data.yml");
-        BountyFileHandler.save(bountyManager.getBounties(), file);
+    public void setMinimumValue(double minimumValue) {
+        this.minimumValue = minimumValue;
     }
 
-    public void setTag(String tag) {
-        this.tag = tag;
+    public double getPlacementFee() {
+        return placementFee;
     }
 
-    private void registerCommands() {
-        commandManager = new CommandManager();
-        commandManager.addCommand(new HelpCommand(this));
-        commandManager.addCommand(new ListCommand(this));
-        commandManager.addCommand(new ViewCommand(this));
-        commandManager.addCommand(new AcceptCommand(this));
-        commandManager.addCommand(new AbandonCommand(this));
-        commandManager.addCommand(new NewCommand(this));
-        commandManager.addCommand(new CancelCommand(this));
-        commandManager.addCommand(new LocateCommand(this));
+    public void setPlacementFee(double placementFee) {
+        this.placementFee = placementFee;
     }
 
-    private void registerEvents() {
-        entityListener = new HeroBountyEntityListener(this);
-        serverListener = new HeroBountyServerListener(this);
-        PluginManager pluginManager = getServer().getPluginManager();
-        pluginManager.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
-        pluginManager.registerEvent(Type.ENTITY_DAMAGE, entityListener, Priority.Normal, this);
-        pluginManager.registerEvent(Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
+    public double getContractFee() {
+        return contractFee;
     }
-    
+
+    public void setContractFee(double contractFee) {
+        this.contractFee = contractFee;
+    }
+
+    public double getDeathFee() {
+        return deathFee;
+    }
+
+    public void setDeathFee(double deathFee) {
+        this.deathFee = deathFee;
+    }
+
+    public boolean shouldPayInconvenience() {
+        return payInconvenience;
+    }
+
+    public void setPayInconvenience(boolean payInconvenience) {
+        this.payInconvenience = payInconvenience;
+    }
+
+    public boolean usesAnonymousTargets() {
+        return anonymousTargets;
+    }
+
+    public void setAnonymousTargets(boolean anonymousTargets) {
+        this.anonymousTargets = anonymousTargets;
+    }
+
+    public boolean isNegativeBalances() {
+        return negativeBalances;
+    }
+
+    public void setNegativeBalances(boolean negativeBalances) {
+        this.negativeBalances = negativeBalances;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
+
+    public int getLocationRounding() {
+        return locationRounding;
+    }
+
+    public void setLocationRounding(int locationRounding) {
+        this.locationRounding = locationRounding;
+    }
+
+    public class ExpirationChecker extends TimerTask {
+
+        private HeroBounty plugin;
+
+        public ExpirationChecker(HeroBounty plugin) {
+            this.plugin = plugin;
+        }
+
+        public HeroBounty getPlugin() {
+            return plugin;
+        }
+
+        @Override
+        public void run() {
+            Bounty[] bounties = plugin.getBountyManager().getBounties().toArray(new Bounty[0]);
+            for (Bounty bounty : bounties) {
+                String[] hunters = bounty.getExpirations().keySet().toArray(new String[0]);
+                for (String hunterName : hunters) {
+                    if (bounty.getMillisecondsLeft(hunterName) <= 0) {
+                        Player hunter = plugin.getServer().getPlayer(hunterName);
+                        bounty.removeHunter(hunterName);
+                        plugin.saveData();
+                        if (hunter != null) {
+                            Messaging.send(plugin, hunter, "Your bounty on $1 has expired.", bounty.getTargetDisplayName());
+                        }
+                    }
+                }
+            }
+        }
+
+        public void setPlugin(HeroBounty plugin) {
+            this.plugin = plugin;
+        }
+    }
 }
