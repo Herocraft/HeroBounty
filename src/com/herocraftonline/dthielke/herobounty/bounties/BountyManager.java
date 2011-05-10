@@ -1,3 +1,4 @@
+
 package com.herocraftonline.dthielke.herobounty.bounties;
 
 import java.util.ArrayList;
@@ -11,8 +12,8 @@ import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
-import com.nijiko.coelho.iConomy.iConomy;
-import com.nijiko.coelho.iConomy.system.Account;
+import com.iConomy.iConomy;
+import com.iConomy.system.Account;
 
 @SuppressWarnings("unused")
 public class BountyManager {
