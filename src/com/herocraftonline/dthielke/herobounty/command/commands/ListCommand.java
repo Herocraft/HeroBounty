@@ -9,7 +9,7 @@ import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
-import com.iConomy.iConomy;
+import com.nijikokun.register.payment.Method;
 
 public class ListCommand extends BaseCommand {
 
@@ -61,7 +61,8 @@ public class ListCommand extends BaseCommand {
                         if (!plugin.getBountyManager().usesAnonymousTargets()) {
                             msg += b.getTarget() + "§f - §e";
                         }
-                        msg += iConomy.format(b.getValue()) + "§f - §eFee: " + iConomy.format(b.getContractFee());
+                        Method register = plugin.getRegister();
+                        msg += register.format(b.getValue()) + "§f - §eFee: " + register.format(b.getContractFee());
                         if (senderName.equalsIgnoreCase(b.getOwner())) {
                             msg += "§7 (posted by you)";
                         }

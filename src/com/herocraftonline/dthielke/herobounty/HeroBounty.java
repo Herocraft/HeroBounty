@@ -32,11 +32,10 @@ import com.herocraftonline.dthielke.herobounty.command.commands.LocateCommand;
 import com.herocraftonline.dthielke.herobounty.command.commands.NewCommand;
 import com.herocraftonline.dthielke.herobounty.command.commands.ViewCommand;
 import com.herocraftonline.dthielke.herobounty.util.ConfigManager;
-import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.PermissionWrapper;
-import com.iConomy.iConomy;
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
+import com.nijikokun.register.payment.Method;
 
 public class HeroBounty extends JavaPlugin {
     
@@ -44,7 +43,7 @@ public class HeroBounty extends JavaPlugin {
     private HeroBountyServerListener serverListener;
     private CommandManager commandManager;
     private PermissionWrapper permissions;
-    private Economy economy;
+    private Method register;
     private BountyManager bountyManager;
     private ConfigManager configManager;
     private String tag;
@@ -57,10 +56,6 @@ public class HeroBounty extends JavaPlugin {
     public CommandManager getCommandManager() {
         return commandManager;
     }
-
-    public Economy getEconomy() {
-        return economy;
-    }
     
     public PermissionWrapper getPermissions() {
         return permissions;
@@ -68,19 +63,6 @@ public class HeroBounty extends JavaPlugin {
 
     public String getTag() {
         return tag;
-    }
-
-    public void loadIConomy() {
-        economy = new Economy();
-        Plugin plugin = this.getServer().getPluginManager().getPlugin("iConomy");
-        if (plugin != null) {
-            if (plugin.isEnabled()) {
-                iConomy iconomy = (iConomy) plugin;
-                economy.setIconomy(iconomy);
-                bountyManager.startExpirationTimer();
-                log(Level.INFO, "iConomy " + iconomy.getDescription().getVersion() + " found.");
-            }
-        }
     }
 
     public void loadPermissions() {
@@ -123,7 +105,6 @@ public class HeroBounty extends JavaPlugin {
         registerCommands();
         configManager.load();
         loadPermissions();
-        loadIConomy();
     }
     
     public void onLoad() {
@@ -159,6 +140,14 @@ public class HeroBounty extends JavaPlugin {
         pluginManager.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
         pluginManager.registerEvent(Type.ENTITY_DAMAGE, entityListener, Priority.Normal, this);
         pluginManager.registerEvent(Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
+    }
+
+    public Method getRegister() {
+        return register;
+    }
+    
+    public void setRegister(Method method) {
+        register = method;
     }
     
 }

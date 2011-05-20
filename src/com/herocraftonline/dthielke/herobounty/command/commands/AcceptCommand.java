@@ -11,8 +11,9 @@ import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
+import com.nijikokun.register.payment.Method;
+import com.nijikokun.register.payment.Method.MethodAccount;
 
 public class AcceptCommand extends BaseCommand {
 
@@ -39,11 +40,13 @@ public class AcceptCommand extends BaseCommand {
                     if (!bounty.getTarget().equals(hunterName)) {
                         if (!bounty.isHunter(hunterName)) {
                             if (plugin.getPermissions().canAcceptBounty(hunter)) {
-                                Economy econ = plugin.getEconomy();
+                                Method register = plugin.getRegister();
+                                MethodAccount hunterAccount = register.getAccount(hunterName);
+
                                 int contractFee = bounty.getContractFee();
-                                if (econ.hasAmount(hunterName, contractFee)) {
+                                if (hunterAccount.hasEnough(contractFee)) {
                                     bounty.addHunter(hunterName);
-                                    boolean feeCharged = econ.subtract(hunterName, contractFee, false) != Double.NaN;
+                                    hunterAccount.subtract(contractFee);
 
                                     GregorianCalendar expiration = new GregorianCalendar();
                                     int bountyDuration = plugin.getBountyManager().getDuration();
@@ -53,11 +56,7 @@ public class AcceptCommand extends BaseCommand {
                                     int bountyRelativeTime = (bountyDuration < 60) ? bountyDuration : (bountyDuration < (60 * 24)) ? bountyDuration / 60 : (bountyDuration < (60 * 24 * 7)) ? bountyDuration / (60 * 24) : bountyDuration / (60 * 24 * 7);
                                     String bountyRelativeAmount = (bountyDuration < 60) ? " minutes" : (bountyDuration < (60 * 24)) ? " hours" : (bountyDuration < (60 * 24 * 7)) ? " days" : " weeks";
 
-                                    if (feeCharged) {
-                                        Messaging.send(plugin, hunter, "Bounty accepted. You have been charged $1.", econ.format(contractFee));
-                                    } else {
-                                        Messaging.send(plugin, hunter, "Bounty accepted.");
-                                    }
+                                    Messaging.send(plugin, hunter, "Bounty accepted. You have been charged $1.", register.format(contractFee));
                                     Messaging.send(plugin, hunter, "Your target is $1. This bounty expires in $2.", bounty.getTargetDisplayName(), bountyRelativeTime + bountyRelativeAmount);
 
                                     Player owner = plugin.getServer().getPlayer(bounty.getOwner());

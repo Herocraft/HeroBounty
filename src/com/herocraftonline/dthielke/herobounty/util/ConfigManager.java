@@ -41,7 +41,6 @@ public class ConfigManager {
         bountyManager.setDuration(config.getInt("bounty-duration", 24 * 60));
         bountyManager.setAnonymousTargets(config.getBoolean("anonymous-targets", false));
         bountyManager.setPayInconvenience(config.getBoolean("pay-inconvenience", true));
-        bountyManager.setNegativeBalances(config.getBoolean("allow-negative-balances", true));
         bountyManager.setLocationRounding(config.getInt("location-rounding", 100));
         plugin.setTag(config.getString("bounty-tag", "&e[Bounty] ").replace('&', '§'));
         respectUntargettables = config.getBoolean("respect-untargettables", true);

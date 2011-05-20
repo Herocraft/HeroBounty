@@ -9,8 +9,9 @@ import org.bukkit.entity.Player;
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
+import com.nijikokun.register.payment.Method;
+import com.nijikokun.register.payment.Method.MethodAccount;
 
 public class NewCommand extends BaseCommand {
 
@@ -53,8 +54,9 @@ public class NewCommand extends BaseCommand {
                                 Messaging.send(plugin, owner, "Value must be greater than $1.", String.valueOf(plugin.getBountyManager().getMinimumValue()));
                                 return;
                             }
-                            Economy econ = plugin.getEconomy();
-                            if (econ.hasAmount(ownerName, value)) {
+                            Method register = plugin.getRegister();
+                            MethodAccount ownerAccount = register.getAccount(ownerName);
+                            if (ownerAccount.hasEnough(value)) {
                                 int postingFee = (int) (plugin.getBountyManager().getPlacementFee() * value);
                                 int award = value - postingFee;
                                 int contractFee = (int) (plugin.getBountyManager().getContractFee() * award);
@@ -64,12 +66,10 @@ public class NewCommand extends BaseCommand {
                                 bounties.add(bounty);
                                 Collections.sort(bounties);
 
-                                boolean feeCharged = econ.subtract(ownerName, value, false) != Double.NaN;
-                                Messaging.send(plugin, owner, "Placed a bounty on $1's head for $2.", targetName, econ.format(award));
-                                if (feeCharged) {
-                                    Messaging.send(plugin, owner, "You have been charged $1 for posting this bounty.", econ.format(postingFee));
-                                }
-                                Messaging.broadcast(plugin, "A new bounty has been placed for $1.", econ.format(award));
+                                ownerAccount.subtract(value);
+                                Messaging.send(plugin, owner, "Placed a bounty on $1's head for $2.", targetName, register.format(award));
+                                Messaging.send(plugin, owner, "You have been charged $1 for posting this bounty.", register.format(postingFee));
+                                Messaging.broadcast(plugin, "A new bounty has been placed for $1.", register.format(award));
 
                                 plugin.saveData();
                             } else {

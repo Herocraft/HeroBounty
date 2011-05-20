@@ -23,8 +23,5 @@ bounty-tag: '&b[BOUNTY] '
 #if true, splits the owner's posting fee between hunters when a bounty is cancelled
 pay-inconvenience: true
 
-#if true, allows a target's balance to go negative if they cannot afford the death penalty
-allow-negative-balances: true
-
 #round locations displayed by the /bounty locate command to the nearest location-rounding
 location-rounding: 100

@@ -9,14 +9,12 @@ import org.bukkit.entity.Player;
 
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
-import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
-import com.iConomy.iConomy;
-import com.iConomy.system.Account;
+import com.nijikokun.register.payment.Method;
+import com.nijikokun.register.payment.Method.MethodAccount;
 
-@SuppressWarnings("unused")
 public class BountyManager {
-    
+
     private static final long EXPIRATION_DELAY = 10 * 1000;
     private static final long EXPIRATION_PERIOD = 5 * 60 * 1000;
 
@@ -28,7 +26,6 @@ public class BountyManager {
     private double deathFee;
     private boolean payInconvenience;
     private boolean anonymousTargets;
-    private boolean negativeBalances;
     private int duration;
     private int locationRounding;
 
@@ -40,11 +37,11 @@ public class BountyManager {
         TimerTask expirationChecker = new ExpirationChecker(plugin);
         plugin.getServer().getScheduler().scheduleAsyncRepeatingTask(plugin, expirationChecker, EXPIRATION_DELAY, EXPIRATION_PERIOD);
     }
-    
+
     public void stopExpirationTimer() {
         plugin.getServer().getScheduler().cancelTasks(plugin);
     }
-    
+
     public boolean completeBounty(int id, String hunterName) {
         Bounty bounty = bounties.get(id);
         Player hunter = plugin.getServer().getPlayer(hunterName);
@@ -52,21 +49,20 @@ public class BountyManager {
         if (hunter == null || target == null) {
             return false;
         }
-        
+
         bounties.remove(id);
         Collections.sort(bounties);
         plugin.saveData();
 
-        Economy econ = plugin.getEconomy();
-        double penalty = econ.subtract(target.getName(), bounty.getDeathPenalty(), negativeBalances);
-        double award = econ.add(hunter.getName(), bounty.getValue());
-        if (penalty != Double.NaN && award != Double.NaN) {
-            String awardStr = econ.format(award);
-            String penaltyStr = econ.format(penalty);
-            Messaging.broadcast(plugin, "$1 has collected a bounty on $2 for $3!", hunter.getName(), bounty.getTargetDisplayName(), awardStr);
-        } else {
-            Messaging.broadcast(plugin, "$1 has collected a bounty on $2's head!", hunter.getName(), bounty.getTargetDisplayName());
-        }
+        Method register = plugin.getRegister();
+
+        MethodAccount targetAccount = register.getAccount(target.getName());
+        targetAccount.subtract(bounty.getDeathPenalty());
+
+        MethodAccount hunterAccount = register.getAccount(target.getName());
+        hunterAccount.add(bounty.getValue());
+
+        Messaging.broadcast(plugin, "$1 has collected a bounty on $2 for $3!", hunter.getDisplayName(), bounty.getTargetDisplayName(), register.format(bounty.getValue()));
         return true;
     }
 
@@ -157,14 +153,6 @@ public class BountyManager {
 
     public void setAnonymousTargets(boolean anonymousTargets) {
         this.anonymousTargets = anonymousTargets;
-    }
-
-    public boolean isNegativeBalances() {
-        return negativeBalances;
-    }
-
-    public void setNegativeBalances(boolean negativeBalances) {
-        this.negativeBalances = negativeBalances;
     }
 
     public int getDuration() {

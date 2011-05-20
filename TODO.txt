@@ -1,6 +1,0 @@
-TODO List
-
-1.	Allow compounding bounties on the same target
-2.  Allow use of items instead of iConomy
-3.  Add toggle for tracking system
-4.  Offer public API for checking bounties

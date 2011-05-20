@@ -10,8 +10,9 @@ import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
+import com.nijikokun.register.payment.Method;
+import com.nijikokun.register.payment.Method.MethodAccount;
 
 public class CancelCommand extends BaseCommand {
 
@@ -39,31 +40,27 @@ public class CancelCommand extends BaseCommand {
                     bounties.remove(bounty);
                     Collections.sort(bounties);
 
-                    Economy econ = plugin.getEconomy();
-                    boolean reimbursed = econ.add(ownerName, value) != Double.NaN;
-                    if (reimbursed) {
-                        Messaging.send(plugin, owner, "You have been reimbursed $1 for your bounty.", econ.format(value));
-                    } else {
-                        Messaging.send(plugin, owner, "You have cancelled your bounty on $1.", bounty.getTargetDisplayName());
-                    }
+                    Method register = plugin.getRegister();
+                    MethodAccount ownerAccount = register.getAccount(ownerName);
+                    ownerAccount.add(value);
+                    Messaging.send(plugin, owner, "You have been reimbursed $1 for your bounty.", register.format(value));
 
                     List<String> hunters = bounty.getHunters();
                     if (!hunters.isEmpty()) {
                         int inconvenience = (int) Math.floor((double) bounty.getPostingFee() / hunters.size());
                         for (String hunterName : bounty.getHunters()) {
-                            reimbursed = econ.add(hunterName, bounty.getContractFee()) != Double.NaN;
+                            MethodAccount hunterAccount = register.getAccount(hunterName);
+                            hunterAccount.add(bounty.getContractFee());
                             if (plugin.getBountyManager().shouldPayInconvenience()) {
-                                econ.add(hunterName, inconvenience);
+                                hunterAccount.add(inconvenience);
                             }
 
                             Player hunter = plugin.getServer().getPlayer(hunterName);
                             if (hunter != null) {
                                 Messaging.send(plugin, hunter, "The bounty on $1 has been cancelled.", bounty.getTargetDisplayName());
-                                if (reimbursed) {
-                                    Messaging.send(plugin, hunter, "Your contract fee has been refunded.");
-                                    if (plugin.getBountyManager().shouldPayInconvenience() && inconvenience > 0) {
-                                        Messaging.send(plugin, hunter, "You have received $1 for the inconvenience.", econ.format(inconvenience));
-                                    }
+                                Messaging.send(plugin, hunter, "Your contract fee has been refunded.");
+                                if (plugin.getBountyManager().shouldPayInconvenience() && inconvenience > 0) {
+                                    Messaging.send(plugin, hunter, "You have received $1 for the inconvenience.", register.format(inconvenience));
                                 }
                             }
 

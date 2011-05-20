@@ -8,8 +8,8 @@ import org.bukkit.entity.Player;
 import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.Economy;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
+import com.nijikokun.register.payment.Method;
 
 public class ViewCommand extends BaseCommand {
 
@@ -34,14 +34,14 @@ public class ViewCommand extends BaseCommand {
             if (acceptedBounties.isEmpty()) {
                 Messaging.send(plugin, hunter, "You currently have no accepted bounties.");
             } else {
-                Economy econ = plugin.getEconomy();
+                Method register = plugin.getRegister();
                 hunter.sendMessage("§cAccepted Bounties:");
                 for (int i = 0; i < acceptedBounties.size(); i++) {
                     Bounty bounty = acceptedBounties.get(i);
                     int bountyDuration = bounty.getMinutesLeft(hunterName);
                     int bountyRelativeTime = (bountyDuration < 60) ? bountyDuration : (bountyDuration < (60 * 24)) ? bountyDuration / 60 : (bountyDuration < (60 * 24 * 7)) ? bountyDuration / (60 * 24) : bountyDuration / (60 * 24 * 7);
                     String bountyRelativeAmount = (bountyDuration < 60) ? " minutes" : (bountyDuration < (60 * 24)) ? " hours" : (bountyDuration < (60 * 24 * 7)) ? " days" : " weeks";
-                    hunter.sendMessage("§f" + (i + 1) + ". §e" + bounty.getTarget() + " - " + econ.format(bounty.getValue()) + " - " + bountyRelativeTime + bountyRelativeAmount);
+                    hunter.sendMessage("§f" + (i + 1) + ". §e" + bounty.getTarget() + " - " + register.format(bounty.getValue()) + " - " + bountyRelativeTime + bountyRelativeAmount);
                 }
             }
         }
