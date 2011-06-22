@@ -59,7 +59,7 @@ public class BountyManager {
         MethodAccount targetAccount = register.getAccount(target.getName());
         targetAccount.subtract(bounty.getDeathPenalty());
 
-        MethodAccount hunterAccount = register.getAccount(target.getName());
+        MethodAccount hunterAccount = register.getAccount(hunter.getName());
         hunterAccount.add(bounty.getValue());
 
         Messaging.broadcast(plugin, "$1 has collected a bounty on $2 for $3!", hunter.getDisplayName(), bounty.getTargetDisplayName(), register.format(bounty.getValue()));
