@@ -6,13 +6,17 @@
  * Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
  **/
 
-package com.herocraftonline.dthielke.herobounty;
+package com.herocraftonline.dthielke.herobounty.bounties;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
+
+import org.bukkit.entity.Player;
 
 public class Bounty implements Comparable<Bounty> {
     private String owner = "";
@@ -39,6 +43,10 @@ public class Bounty implements Comparable<Bounty> {
         this.contractFee = contractFee;
         this.deathPenalty = deathPenalty;
     }
+    
+    public void addHunter(Player player) {
+        addHunter(player.getName());
+    }
 
     public void addHunter(String name) {
         hunters.add(name);
@@ -62,6 +70,10 @@ public class Bounty implements Comparable<Bounty> {
 
     public int getDeathPenalty() {
         return deathPenalty;
+    }
+    
+    public Date getExpiration(Player hunter) {
+        return getExpiration(hunter.getName());
     }
 
     public Date getExpiration(String hunter) {
@@ -118,10 +130,18 @@ public class Bounty implements Comparable<Bounty> {
                 return true;
         return false;
     }
+    
+    public boolean isHunter(Player player) {
+        return isHunter(player.getName());
+    }
 
     public void removeHunter(String name) {
         hunters.remove(name);
         expirations.remove(name);
+    }
+    
+    public void removeHunter(Player player) {
+        removeHunter(player.getName());
     }
 
     public void setContractFee(int contractFee) {
@@ -131,6 +151,16 @@ public class Bounty implements Comparable<Bounty> {
     public void setDeathPenalty(int deathPenalty) {
         this.deathPenalty = deathPenalty;
     }
+    
+    public void setExpiration(Player player, int duration) {
+        setExpiration(player.getName(), duration);
+    }
+    
+    public void setExpiration(String name, int duration) {
+        GregorianCalendar expiration = new GregorianCalendar();
+        expiration.add(Calendar.MINUTE, duration);
+        expirations.put(name, expiration.getTime());
+    }
 
     public void setExpirations(HashMap<String, Date> expirations) {
         this.expirations = expirations;
@@ -138,6 +168,19 @@ public class Bounty implements Comparable<Bounty> {
 
     public void setHunters(List<String> hunters) {
         this.hunters = hunters;
+    }
+    
+    public boolean isOwner(String owner) {
+        return this.owner.equals(owner);
+    }
+    
+    public boolean isOwner(Player player) {
+        return isOwner(player.getName());
+    }
+    
+    public void setOwner(Player player) {
+        setOwner(player.getName());
+        setOwnerDisplayName(player.getDisplayName());
     }
 
     public void setOwner(String owner) {
@@ -150,6 +193,11 @@ public class Bounty implements Comparable<Bounty> {
 
     public void setPostingFee(int postingFee) {
         this.postingFee = postingFee;
+    }
+    
+    public void setTarget(Player player) {
+        setTarget(player.getName());
+        setTargetDisplayName(player.getDisplayName());
     }
 
     public void setTarget(String target) {

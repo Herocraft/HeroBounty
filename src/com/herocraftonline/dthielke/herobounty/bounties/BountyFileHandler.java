@@ -6,7 +6,7 @@
  * Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
  **/
 
-package com.herocraftonline.dthielke.herobounty;
+package com.herocraftonline.dthielke.herobounty.bounties;
 
 import java.awt.geom.Point2D;
 import java.io.File;

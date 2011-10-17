@@ -12,15 +12,18 @@ import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.permission.Permission;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.herocraftonline.dthielke.herobounty.bounties.BountyFileHandler;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.CommandManager;
 import com.herocraftonline.dthielke.herobounty.command.commands.AbandonCommand;
@@ -32,22 +35,17 @@ import com.herocraftonline.dthielke.herobounty.command.commands.LocateCommand;
 import com.herocraftonline.dthielke.herobounty.command.commands.NewCommand;
 import com.herocraftonline.dthielke.herobounty.command.commands.ViewCommand;
 import com.herocraftonline.dthielke.herobounty.util.ConfigManager;
-import com.herocraftonline.dthielke.herobounty.util.PermissionWrapper;
-import com.nijiko.permissions.PermissionHandler;
-import com.nijikokun.bukkit.Permissions.Permissions;
-import com.nijikokun.register.payment.Method;
 
 public class HeroBounty extends JavaPlugin {
-    
+
+    private static final Logger log = Logger.getLogger("Minecraft");
     private HeroBountyEntityListener entityListener;
-    private HeroBountyServerListener serverListener;
     private CommandManager commandManager;
-    private PermissionWrapper permissions;
-    private Method register;
     private BountyManager bountyManager;
     private ConfigManager configManager;
-    private String tag;
-    private Logger log;
+    
+    public static Permission permission;
+    public static Economy economy;
 
     public BountyManager getBountyManager() {
         return bountyManager;
@@ -56,31 +54,9 @@ public class HeroBounty extends JavaPlugin {
     public CommandManager getCommandManager() {
         return commandManager;
     }
-    
-    public PermissionWrapper getPermissions() {
-        return permissions;
-    }
-
-    public String getTag() {
-        return tag;
-    }
-
-    public void loadPermissions() {
-        Plugin plugin = this.getServer().getPluginManager().getPlugin("Permissions");
-        if (plugin != null) {
-            if (plugin.isEnabled()) {
-                Permissions permissions = (Permissions) plugin;
-                PermissionHandler security = permissions.getHandler();
-                PermissionWrapper ph = new PermissionWrapper(security);
-                ph.setRespectUntargettables(configManager.shouldRespectUntargettables());
-                this.permissions = ph;
-                log(Level.INFO, "Permissions " + Permissions.version + " found.");
-            }
-        }
-    }
 
     public void log(Level level, String log) {
-        this.log.log(level, "[HeroBounty] " + log);
+        HeroBounty.log.log(level, "[HeroBounty] " + log);
     }
 
     @Override
@@ -90,21 +66,46 @@ public class HeroBounty extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        PluginDescriptionFile pdfFile = this.getDescription();
-        log(Level.INFO, pdfFile.getName() + " version " + pdfFile.getVersion() + " disabled.");
+        log(Level.INFO, "version " + getDescription().getVersion() + " disabled.");
     }
 
     @Override
     public void onEnable() {
-        log = Logger.getLogger("Minecraft");
-
-        PluginDescriptionFile pdfFile = this.getDescription();
-        log(Level.INFO, pdfFile.getName() + " version " + pdfFile.getVersion() + " enabled.");
-
         registerEvents();
         registerCommands();
         configManager.load();
-        loadPermissions();
+        
+        if (!setupPermission()) {
+            log(Level.SEVERE, "Permission plugin not found. Disabling plugin.");
+            getPluginLoader().disablePlugin(this);
+            return;
+        }
+
+        if (!setupEconomy()) {
+            log(Level.SEVERE, "Economy plugin not found. Disabling plugin.");
+            getPluginLoader().disablePlugin(this);
+            return;
+        }
+        
+        log(Level.INFO, "version " + getDescription().getVersion() + " enabled.");
+    }
+    
+    private boolean setupPermission() {
+        RegisteredServiceProvider<Permission> permissionProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.permission.Permission.class);
+        if (permissionProvider != null) {
+            permission = permissionProvider.getProvider();
+        }
+
+        return (permission != null);
+    }
+
+    private boolean setupEconomy() {
+        RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+        if (economyProvider != null) {
+            economy = economyProvider.getProvider();
+        }
+
+        return (economy != null);
     }
     
     public void onLoad() {
@@ -115,10 +116,6 @@ public class HeroBounty extends JavaPlugin {
     public void saveData() {
         File file = new File(getDataFolder(), "data.yml");
         BountyFileHandler.save(bountyManager.getBounties(), file);
-    }
-
-    public void setTag(String tag) {
-        this.tag = tag;
     }
 
     private void registerCommands() {
@@ -135,19 +132,9 @@ public class HeroBounty extends JavaPlugin {
 
     private void registerEvents() {
         entityListener = new HeroBountyEntityListener(this);
-        serverListener = new HeroBountyServerListener(this);
         PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
         pluginManager.registerEvent(Type.ENTITY_DAMAGE, entityListener, Priority.Normal, this);
-        pluginManager.registerEvent(Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
     }
 
-    public Method getRegister() {
-        return register;
-    }
-    
-    public void setRegister(Method method) {
-        register = method;
-    }
-    
 }

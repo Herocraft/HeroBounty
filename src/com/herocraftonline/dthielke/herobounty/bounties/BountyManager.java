@@ -7,11 +7,8 @@ import java.util.TimerTask;
 
 import org.bukkit.entity.Player;
 
-import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
-import com.nijikokun.register.payment.Method;
-import com.nijikokun.register.payment.Method.MethodAccount;
 
 public class BountyManager {
 
@@ -31,6 +28,31 @@ public class BountyManager {
 
     public BountyManager(HeroBounty plugin) {
         this.plugin = plugin;
+    }
+    
+    public static String getBountyExpirationString(int duration) {
+        int d = duration;
+        return (d < 60) ? d + " minutes" : (d < (60 * 24)) ? d / 60 + " hours" : (d < (60 * 24 * 7)) ? d / (60 * 24) + " days" : d / (60 * 24 * 7) + " weeks";
+    }
+    
+    public boolean addBounty(Bounty bounty) {
+        if (isTarget(bounty.getTarget()))
+            return false;
+        else
+            bounties.add(bounty);
+        return true;
+    }
+    
+    public void sortBounties() {
+        Collections.sort(bounties);
+    }
+    
+    public boolean removeBounty(Bounty bounty) {
+        return bounties.remove(bounty);
+    }
+    
+    public String getBountyExpirationString() {
+        return getBountyExpirationString(duration);
     }
 
     public void startExpirationTimer() {
@@ -54,29 +76,40 @@ public class BountyManager {
         Collections.sort(bounties);
         plugin.saveData();
 
-        Method register = plugin.getRegister();
+        HeroBounty.economy.withdrawPlayer(target.getName(), bounty.getDeathPenalty());
+        HeroBounty.economy.depositPlayer(hunter.getName(), bounty.getValue());
 
-        MethodAccount targetAccount = register.getAccount(target.getName());
-        targetAccount.subtract(bounty.getDeathPenalty());
-
-        MethodAccount hunterAccount = register.getAccount(hunter.getName());
-        hunterAccount.add(bounty.getValue());
-
-        Messaging.broadcast(plugin, "$1 has collected a bounty on $2 for $3!", hunter.getDisplayName(), bounty.getTargetDisplayName(), register.format(bounty.getValue()));
+        Messaging.broadcast("$1 has collected a bounty on $2 for $3!", hunter.getDisplayName(), bounty.getTargetDisplayName(), HeroBounty.economy.format(bounty.getValue()));
         return true;
+    }
+    
+    public Bounty getBountyOn(Player player) {
+        return getBountyOn(player.getName());
+    }
+    
+    public Bounty getBountyOn(String name) {
+        for (Bounty bounty : bounties) {
+            if (bounty.getTarget().equalsIgnoreCase(name)) {
+                return bounty;
+            }
+        }
+        return null;
     }
 
     public boolean isTarget(Player player) {
-        String name = player.getName();
+        return isTarget(player.getName());
+    }
+    
+    public boolean isTarget(String name) {
         for (Bounty bounty : bounties) {
-            if (bounty.getTarget().equals(name)) {
+            if (bounty.getTarget().equalsIgnoreCase(name)) {
                 return true;
             }
         }
         return false;
     }
 
-    public List<Bounty> listBountiesAcceptedBy(String hunter) {
+    public List<Bounty> getBountiesAcceptedBy(String hunter) {
         List<Bounty> acceptedBounties = new ArrayList<Bounty>();
         for (Bounty bounty : bounties) {
             if (bounty.isHunter(hunter)) {
@@ -84,19 +117,6 @@ public class BountyManager {
             }
         }
         return acceptedBounties;
-    }
-
-    public static int parseBountyId(String idStr, List<Bounty> bounties) {
-        int id;
-        try {
-            id = Integer.parseInt(idStr) - 1;
-            if (id < 0 || id >= bounties.size()) {
-                throw new IndexOutOfBoundsException();
-            }
-        } catch (Exception e) {
-            id = -1;
-        }
-        return id;
     }
 
     public List<Bounty> getBounties() {
@@ -194,7 +214,7 @@ public class BountyManager {
                         bounty.removeHunter(hunterName);
                         plugin.saveData();
                         if (hunter != null) {
-                            Messaging.send(plugin, hunter, "Your bounty on $1 has expired.", bounty.getTargetDisplayName());
+                            Messaging.send(hunter, "Your bounty on $1 has expired.", bounty.getTargetDisplayName());
                         }
                     }
                 }

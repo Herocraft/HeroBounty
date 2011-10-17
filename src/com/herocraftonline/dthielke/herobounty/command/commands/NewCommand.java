@@ -6,12 +6,10 @@ import java.util.List;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
+import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
-import com.nijikokun.register.payment.Method;
-import com.nijikokun.register.payment.Method.MethodAccount;
 
 public class NewCommand extends BaseCommand {
 
@@ -34,12 +32,12 @@ public class NewCommand extends BaseCommand {
             if (target != null) {
                 String targetName = target.getName();
                 if (target != owner) {
-                    if (plugin.getPermissions().canCreateBounty(owner)) {
-                        if (plugin.getPermissions().canBeTargetted(target)) {
+                    if (HeroBounty.permission.playerHas(owner, "herobounty.new")) {
+                        if (!HeroBounty.permission.playerHas(target, "herobounty.untargettable")) {
                             List<Bounty> bounties = plugin.getBountyManager().getBounties();
                             for (Bounty b : bounties) {
                                 if (b.getTarget().equalsIgnoreCase(targetName)) {
-                                    Messaging.send(plugin, owner, "There is already a bounty on $1.", targetName);
+                                    Messaging.send(owner, "There is already a bounty on $1.", targetName);
                                     return;
                                 }
                             }
@@ -51,41 +49,39 @@ public class NewCommand extends BaseCommand {
                                     throw new NumberFormatException();
                                 }
                             } catch (NumberFormatException e) {
-                                Messaging.send(plugin, owner, "Value must be greater than $1.", String.valueOf(plugin.getBountyManager().getMinimumValue()));
+                                Messaging.send(owner, "Value must be greater than $1.", String.valueOf(plugin.getBountyManager().getMinimumValue()));
                                 return;
                             }
-                            Method register = plugin.getRegister();
-                            MethodAccount ownerAccount = register.getAccount(ownerName);
-                            if (ownerAccount.hasEnough(value)) {
+                            if (HeroBounty.economy.getBalance(ownerName) >= value) {
                                 int postingFee = (int) (plugin.getBountyManager().getPlacementFee() * value);
                                 int award = value - postingFee;
                                 int contractFee = (int) (plugin.getBountyManager().getContractFee() * award);
                                 int deathPenalty = (int) (plugin.getBountyManager().getDeathFee() * award);
 
-                                Bounty bounty = new Bounty(owner.getName(), owner.getDisplayName(), targetName, target.getDisplayName(), award, postingFee, contractFee, deathPenalty);
+                                Bounty bounty = new Bounty(ownerName, owner.getDisplayName(), targetName, target.getDisplayName(), award, postingFee, contractFee, deathPenalty);
                                 bounties.add(bounty);
                                 Collections.sort(bounties);
 
-                                ownerAccount.subtract(value);
-                                Messaging.send(plugin, owner, "Placed a bounty on $1's head for $2.", targetName, register.format(award));
-                                Messaging.send(plugin, owner, "You have been charged $1 for posting this bounty.", register.format(postingFee));
-                                Messaging.broadcast(plugin, "A new bounty has been placed for $1.", register.format(award));
+                                HeroBounty.economy.withdrawPlayer(ownerName, value);
+                                Messaging.send(owner, "Placed a bounty on $1's head for $2.", targetName, HeroBounty.economy.format(award));
+                                Messaging.send(owner, "You have been charged $1 for posting this bounty.", HeroBounty.economy.format(postingFee));
+                                Messaging.broadcast("A new bounty has been placed for $1.", HeroBounty.economy.format(award));
 
                                 plugin.saveData();
                             } else {
-                                Messaging.send(plugin, owner, "You don't have enough funds to do that.");
+                                Messaging.send(owner, "You don't have enough funds to do that.");
                             }
                         } else {
-                            Messaging.send(plugin, owner, "This player can't be targetted.");
+                            Messaging.send(owner, "This player can't be targetted.");
                         }
                     } else {
-                        Messaging.send(plugin, owner, "You don't have permission to create bounties.");
+                        Messaging.send(owner, "You don't have permission to create bounties.");
                     }
                 } else {
-                    Messaging.send(plugin, owner, "You can't place a bounty on yourself.");
+                    Messaging.send(owner, "You can't place a bounty on yourself.");
                 }
             } else {
-                Messaging.send(plugin, owner, "Target player not found.");
+                Messaging.send(owner, "Target player not found.");
             }
         }
     }

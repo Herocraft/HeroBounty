@@ -6,6 +6,6 @@
 	<classpathentry kind="var" path="LIBRARY/snakeyaml-1.7.jar"/>
 	<classpathentry kind="var" path="LIBRARY/Permissions.jar"/>
 	<classpathentry kind="var" path="LIBRARY/craftbukkit-0.0.1-SNAPSHOT.jar"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Register"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Vault"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

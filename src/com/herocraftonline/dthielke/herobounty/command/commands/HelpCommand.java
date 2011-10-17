@@ -40,7 +40,7 @@ public class HelpCommand extends BaseCommand {
         if (page >= numPages || page < 0) {
             page = 0;
         }
-        sender.sendMessage("§c-----[ " + "§f" + plugin.getTag().replace("[", "§f").replace("]","§f") + "Help <" + (page + 1) + "/" + numPages + ">§c ]-----");
+        sender.sendMessage("§c-----[ " + "§fHeroBounty Help <" + (page + 1) + "/" + numPages + ">§c ]-----");
         int start = page * CMDS_PER_PAGE;
         int end = start + CMDS_PER_PAGE;
         if (end > commands.size()) {
@@ -51,7 +51,7 @@ public class HelpCommand extends BaseCommand {
             sender.sendMessage("  §a" + cmd.getUsage());
         }
         
-        sender.sendMessage("§cFor more info on a particular command, type '/<command> ?'");
+        sender.sendMessage("§cFor more info on a particular command, type §f/<command> ?§c.");
     }
 
 }

@@ -19,6 +19,8 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityListener;
 
+import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
+
 public class HeroBountyEntityListener extends EntityListener {
     public static HeroBounty plugin;
 

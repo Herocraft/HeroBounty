@@ -8,8 +8,8 @@ import java.util.logging.Level;
 
 import org.bukkit.util.config.Configuration;
 
-import com.herocraftonline.dthielke.herobounty.BountyFileHandler;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
+import com.herocraftonline.dthielke.herobounty.bounties.BountyFileHandler;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 
 public class ConfigManager {
@@ -42,7 +42,6 @@ public class ConfigManager {
         bountyManager.setAnonymousTargets(config.getBoolean("anonymous-targets", false));
         bountyManager.setPayInconvenience(config.getBoolean("pay-inconvenience", true));
         bountyManager.setLocationRounding(config.getInt("location-rounding", 100));
-        plugin.setTag(config.getString("bounty-tag", "&e[Bounty] ").replace('&', '§'));
         respectUntargettables = config.getBoolean("respect-untargettables", true);
     }
 

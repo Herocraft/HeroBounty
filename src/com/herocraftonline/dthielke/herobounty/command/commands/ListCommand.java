@@ -1,15 +1,16 @@
 package com.herocraftonline.dthielke.herobounty.command.commands;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.herocraftonline.dthielke.herobounty.Bounty;
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
+import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
 import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
-import com.nijikokun.register.payment.Method;
 
 public class ListCommand extends BaseCommand {
 
@@ -27,10 +28,13 @@ public class ListCommand extends BaseCommand {
     public void execute(CommandSender sender, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            if (plugin.getPermissions().canViewBountyList(player)) {
-
+            if (HeroBounty.permission.playerHas(player, "herobounty.list")) {
                 String senderName = player.getName();
-                List<Bounty> bounties = plugin.getBountyManager().getBounties();
+                List<Bounty> bounties = new ArrayList<Bounty>(plugin.getBountyManager().getBounties());
+                for (Iterator<Bounty> iter = bounties.iterator(); iter.hasNext();) {
+                    if (plugin.getServer().getPlayer(iter.next().getTarget()) == null)
+                        iter.remove();
+                }
 
                 int perPage = 7;
                 int currentPage;
@@ -50,9 +54,9 @@ public class ListCommand extends BaseCommand {
                 pageEnd = (pageEnd >= bounties.size()) ? bounties.size() - 1 : pageEnd;
 
                 if (bounties.isEmpty()) {
-                    Messaging.send(plugin, sender, "No bounties currently listed.");
+                    Messaging.send(sender, "No bounties currently listed.");
                 } else if (currentPage > numPages) {
-                    Messaging.send(plugin, sender, "Invalid page number.");
+                    Messaging.send(sender, "Invalid page number.");
                 } else {
                     sender.sendMessage("§cAvailable Bounties (Page §f#" + currentPage + "§c of §f" + numPages + "§c):");
                     for (int i = pageStart; i <= pageEnd; i++) {
@@ -61,8 +65,7 @@ public class ListCommand extends BaseCommand {
                         if (!plugin.getBountyManager().usesAnonymousTargets()) {
                             msg += b.getTarget() + "§f - §e";
                         }
-                        Method register = plugin.getRegister();
-                        msg += register.format(b.getValue()) + "§f - §eFee: " + register.format(b.getContractFee());
+                        msg += HeroBounty.economy.format(b.getValue()) + "§f - §eFee: " + HeroBounty.economy.format(b.getContractFee());
                         if (senderName.equalsIgnoreCase(b.getOwner())) {
                             msg += "§7 (posted by you)";
                         }
@@ -70,7 +73,7 @@ public class ListCommand extends BaseCommand {
                     }
                 }
             } else {
-                Messaging.send(plugin, player, "You don't have permission to use this command.");
+                Messaging.send(player, "You don't have permission to use this command.");
             }
         }
     }

@@ -17,9 +17,6 @@ bounty-duration: 1440
 #if true, hides the target names until a bounty is accepted
 anonymous-targets: false
 
-#tag placed before all bounty related messages (supports iChat coloring)
-bounty-tag: '&b[BOUNTY] '
-
 #if true, splits the owner's posting fee between hunters when a bounty is cancelled
 pay-inconvenience: true
 
