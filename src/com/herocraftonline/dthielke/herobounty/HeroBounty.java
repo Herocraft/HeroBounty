@@ -1,6 +1,6 @@
 /**
  * Copyright (C) 2011 DThielke <dave.thielke@gmail.com>
- * 
+ *
  * This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivs 3.0 Unported License.
  * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/3.0/ or send a letter to
  * Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
@@ -8,13 +8,13 @@
 
 package com.herocraftonline.dthielke.herobounty;
 
-import java.io.File;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import com.herocraftonline.dthielke.herobounty.bounties.BountyFileHandler;
+import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
+import com.herocraftonline.dthielke.herobounty.command.CommandManager;
+import com.herocraftonline.dthielke.herobounty.command.commands.*;
+import com.herocraftonline.dthielke.herobounty.util.ConfigManager;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
-
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Event.Priority;
@@ -23,18 +23,9 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.herocraftonline.dthielke.herobounty.bounties.BountyFileHandler;
-import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
-import com.herocraftonline.dthielke.herobounty.command.CommandManager;
-import com.herocraftonline.dthielke.herobounty.command.commands.AbandonCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.AcceptCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.CancelCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.HelpCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.ListCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.LocateCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.NewCommand;
-import com.herocraftonline.dthielke.herobounty.command.commands.ViewCommand;
-import com.herocraftonline.dthielke.herobounty.util.ConfigManager;
+import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class HeroBounty extends JavaPlugin {
 
@@ -43,7 +34,7 @@ public class HeroBounty extends JavaPlugin {
     private CommandManager commandManager;
     private BountyManager bountyManager;
     private ConfigManager configManager;
-    
+
     public static Permission permission;
     public static Economy economy;
 
@@ -74,7 +65,7 @@ public class HeroBounty extends JavaPlugin {
         registerEvents();
         registerCommands();
         configManager.load();
-        
+
         if (!setupPermission()) {
             log(Level.SEVERE, "Permission plugin not found. Disabling plugin.");
             getPluginLoader().disablePlugin(this);
@@ -86,10 +77,10 @@ public class HeroBounty extends JavaPlugin {
             getPluginLoader().disablePlugin(this);
             return;
         }
-        
+
         log(Level.INFO, "version " + getDescription().getVersion() + " enabled.");
     }
-    
+
     private boolean setupPermission() {
         RegisteredServiceProvider<Permission> permissionProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.permission.Permission.class);
         if (permissionProvider != null) {
@@ -107,7 +98,7 @@ public class HeroBounty extends JavaPlugin {
 
         return (economy != null);
     }
-    
+
     public void onLoad() {
         bountyManager = new BountyManager(this);
         configManager = new ConfigManager(this);
@@ -134,7 +125,6 @@ public class HeroBounty extends JavaPlugin {
         entityListener = new HeroBountyEntityListener(this);
         PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
-        pluginManager.registerEvent(Type.ENTITY_DAMAGE, entityListener, Priority.Normal, this);
     }
 
 }
