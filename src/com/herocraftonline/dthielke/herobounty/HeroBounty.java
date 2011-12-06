@@ -62,6 +62,9 @@ public class HeroBounty extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        bountyManager = new BountyManager(this);
+        configManager = new ConfigManager(this);
+
         registerEvents();
         registerCommands();
         configManager.load();
@@ -97,11 +100,6 @@ public class HeroBounty extends JavaPlugin {
         }
 
         return (economy != null);
-    }
-
-    public void onLoad() {
-        bountyManager = new BountyManager(this);
-        configManager = new ConfigManager(this);
     }
 
     public void saveData() {
