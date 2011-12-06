@@ -53,7 +53,6 @@ public class CancelCommand extends BaseCommand {
             if (!hunters.isEmpty()) {
                 int inconvenience = (int) Math.floor((double) bounty.getPostingFee() / hunters.size());
                 for (String hunterName : bounty.getHunters()) {
-                    HeroBounty.economy.depositPlayer(hunterName, value);
                     if (plugin.getBountyManager().shouldPayInconvenience()) {
                         HeroBounty.economy.depositPlayer(hunterName, inconvenience);
                     }
