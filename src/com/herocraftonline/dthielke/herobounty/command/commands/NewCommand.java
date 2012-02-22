@@ -1,30 +1,29 @@
 package com.herocraftonline.dthielke.herobounty.command.commands;
 
-import java.util.Collections;
-import java.util.List;
-
+import com.herocraftonline.dthielke.herobounty.HeroBounty;
+import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
+import com.herocraftonline.dthielke.herobounty.command.BasicCommand;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.herocraftonline.dthielke.herobounty.HeroBounty;
-import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
-import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.Messaging;
+import java.util.Collections;
+import java.util.List;
 
-public class NewCommand extends BaseCommand {
+public class NewCommand extends BasicCommand {
+    private final HeroBounty plugin;
 
     public NewCommand(HeroBounty plugin) {
-        super(plugin);
-        name = "New";
-        description = "Creates a new bounty for a fee";
-        usage = "§e/bounty new §9<target> <value>";
-        minArgs = 2;
-        maxArgs = 2;
-        identifiers.add("bounty new");
+        super("New");
+        setDescription("Creates a new bounty for a fee");
+        setUsage("§e/bounty new §9<target> <value>");
+        setArgumentRange(2, 2);
+        setIdentifiers("bounty new");
+        this.plugin = plugin;
     }
 
     @Override
-    public void execute(CommandSender sender, String[] args) {
+    public boolean execute(CommandSender sender, String identifier, String[] args) {
         if (sender instanceof Player) {
             Player owner = (Player) sender;
             String ownerName = owner.getName();
@@ -38,7 +37,7 @@ public class NewCommand extends BaseCommand {
                             for (Bounty b : bounties) {
                                 if (b.getTarget().equalsIgnoreCase(targetName)) {
                                     Messaging.send(owner, "There is already a bounty on $1.", targetName);
-                                    return;
+                                    return true;
                                 }
                             }
 
@@ -50,7 +49,7 @@ public class NewCommand extends BaseCommand {
                                 }
                             } catch (NumberFormatException e) {
                                 Messaging.send(owner, "Value must be greater than $1.", String.valueOf(plugin.getBountyManager().getMinimumValue()));
-                                return;
+                                return true;
                             }
                             if (HeroBounty.economy.getBalance(ownerName) >= value) {
                                 int postingFee = (int) (plugin.getBountyManager().getPlacementFee() * value);
@@ -84,6 +83,7 @@ public class NewCommand extends BaseCommand {
                 Messaging.send(owner, "Target player not found.");
             }
         }
+        return true;
     }
 
 }

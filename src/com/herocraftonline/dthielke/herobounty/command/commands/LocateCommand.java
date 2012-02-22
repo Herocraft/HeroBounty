@@ -1,31 +1,30 @@
 package com.herocraftonline.dthielke.herobounty.command.commands;
 
-import java.util.List;
-
+import com.herocraftonline.dthielke.herobounty.HeroBounty;
+import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
+import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
+import com.herocraftonline.dthielke.herobounty.command.BasicCommand;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.herocraftonline.dthielke.herobounty.HeroBounty;
-import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
-import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
-import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.Messaging;
+import java.util.List;
 
-public class LocateCommand extends BaseCommand {
+public class LocateCommand extends BasicCommand {
+    private final HeroBounty plugin;
 
     public LocateCommand(HeroBounty plugin) {
-        super(plugin);
-        name = "Locate";
-        description = "Shows approximate locations of tracked targets";
-        usage = "§e/bounty locate §8[target]";
-        minArgs = 0;
-        maxArgs = 1;
-        identifiers.add("bounty locate");
+        super("Locate");
+        setDescription("Shows approximate locations of tracked targets");
+        setUsage("§e/bounty locate §8[target]");
+        setArgumentRange(0, 1);
+        setIdentifiers("bounty locate");
+        this.plugin = plugin;
     }
 
     @Override
-    public void execute(CommandSender sender, String[] args) {
+    public boolean execute(CommandSender sender, String identifier, String[] args) {
         if (sender instanceof Player) {
             Player hunter = (Player) sender;
             String hunterName = hunter.getName();
@@ -34,7 +33,7 @@ public class LocateCommand extends BaseCommand {
 
             if (!HeroBounty.permission.playerHas(hunter, "herobounty.locate")) {
                 Messaging.send(hunter, "You don't have permission to locate targets.");
-                return;
+                return true;
             }
 
             List<Bounty> acceptedBounties = bountyMngr.getBountiesAcceptedBy(hunterName);
@@ -44,13 +43,13 @@ public class LocateCommand extends BaseCommand {
             } else if (args.length == 1) {
                 if (!bountyMngr.isTarget(args[0])) {
                     Messaging.send(hunter, "Bounty not found.");
-                    return;
+                    return true;
                 }
 
                 Player target = plugin.getServer().getPlayer(args[0]);
                 if (target == null) {
                     Messaging.send(hunter, "Target is offline.");
-                    return;
+                    return true;
                 }
 
                 Location loc = roundLocation(target.getLocation(), locationRounding);
@@ -70,6 +69,7 @@ public class LocateCommand extends BaseCommand {
                 }
             }
         }
+        return true;
     }
 
     private Location roundLocation(Location loc, int roundTo) {

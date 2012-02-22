@@ -1,39 +1,39 @@
 package com.herocraftonline.dthielke.herobounty.command.commands;
 
+import com.herocraftonline.dthielke.herobounty.HeroBounty;
+import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
+import com.herocraftonline.dthielke.herobounty.command.BasicCommand;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-
-import com.herocraftonline.dthielke.herobounty.HeroBounty;
-import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
-import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.Messaging;
-
-public class ListCommand extends BaseCommand {
+public class ListCommand extends BasicCommand {
+    private final HeroBounty plugin;
 
     public ListCommand(HeroBounty plugin) {
-        super(plugin);
-        name = "List";
-        description = "Lists available bounties";
-        usage = "§e/bounty list §8[page#]";
-        minArgs = 0;
-        maxArgs = 1;
-        identifiers.add("bounty list");
+        super("List");
+        setDescription("Lists available bounties");
+        setUsage("§e/bounty list §8[page#]");
+        setArgumentRange(0, 1);
+        setIdentifiers("bounty list");
+        this.plugin = plugin;
     }
 
     @Override
-    public void execute(CommandSender sender, String[] args) {
+    public boolean execute(CommandSender sender, String label, String[] args) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
             if (HeroBounty.permission.playerHas(player, "herobounty.list")) {
                 String senderName = player.getName();
                 List<Bounty> bounties = new ArrayList<Bounty>(plugin.getBountyManager().getBounties());
-                for (Iterator<Bounty> iter = bounties.iterator(); iter.hasNext();) {
-                    if (plugin.getServer().getPlayer(iter.next().getTarget()) == null)
+                for (Iterator<Bounty> iter = bounties.iterator(); iter.hasNext(); ) {
+                    if (plugin.getServer().getPlayer(iter.next().getTarget()) == null) {
                         iter.remove();
+                    }
                 }
 
                 int perPage = 7;
@@ -76,6 +76,7 @@ public class ListCommand extends BaseCommand {
                 Messaging.send(player, "You don't have permission to use this command.");
             }
         }
+        return true;
     }
 
 }

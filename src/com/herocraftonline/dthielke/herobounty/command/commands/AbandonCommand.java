@@ -1,29 +1,28 @@
 package com.herocraftonline.dthielke.herobounty.command.commands;
 
-import java.util.List;
-
+import com.herocraftonline.dthielke.herobounty.HeroBounty;
+import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
+import com.herocraftonline.dthielke.herobounty.command.BasicCommand;
+import com.herocraftonline.dthielke.herobounty.util.Messaging;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.herocraftonline.dthielke.herobounty.HeroBounty;
-import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
-import com.herocraftonline.dthielke.herobounty.command.BaseCommand;
-import com.herocraftonline.dthielke.herobounty.util.Messaging;
+import java.util.List;
 
-public class AbandonCommand extends BaseCommand {
+public class AbandonCommand extends BasicCommand {
+    private final HeroBounty plugin;
 
     public AbandonCommand(HeroBounty plugin) {
-        super(plugin);
-        name = "Abandon";
-        description = "Abandons a previously accepted bounty";
-        usage = "§e/bounty abandon §9<target>";
-        minArgs = 1;
-        maxArgs = 1;
-        identifiers.add("bounty abandon");
+        super("Abandon");
+        setDescription("Abandons a previously accepted bounty");
+        setUsage("§e/bounty abandon §9<target>");
+        setArgumentRange(1, 1);
+        setIdentifiers("bounty abandon");
+        this.plugin = plugin;
     }
 
     @Override
-    public void execute(CommandSender sender, String[] args) {
+    public boolean execute(CommandSender sender, String identifier, String[] args) {
         if (sender instanceof Player) {
             Player hunter = (Player) sender;
             String hunterName = hunter.getName();
@@ -40,13 +39,15 @@ public class AbandonCommand extends BaseCommand {
 
             if (bounty == null) {
                 Messaging.send(hunter, "Bounty not found.");
-                return;
+                return true;
             }
 
             bounty.removeHunter(hunter);
             Messaging.send(hunter, "Bounty abandoned.");
             plugin.saveData();
         }
+
+        return true;
     }
 
 }

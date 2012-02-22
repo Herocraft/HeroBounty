@@ -12,24 +12,28 @@ import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntityListener;
 
 import java.util.List;
 
-public class HeroBountyEntityListener extends EntityListener {
+public class HeroBountyEntityListener implements Listener {
     public static HeroBounty plugin;
 
     public HeroBountyEntityListener(HeroBounty plugin) {
         HeroBountyEntityListener.plugin = plugin;
     }
 
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onEntityDeath(EntityDeathEvent event) {
         Entity entity = event.getEntity();
-        if (!(entity instanceof Player))
+        if (!(entity instanceof Player)) {
             return;
+        }
         Player defender = (Player) entity;
         String defenderName = defender.getName();
 
@@ -37,12 +41,14 @@ public class HeroBountyEntityListener extends EntityListener {
         String attackerName;
         if (dmgEvent instanceof EntityDamageByEntityEvent) {
             Entity attacker = ((EntityDamageByEntityEvent) dmgEvent).getDamager();
-            if (dmgEvent.getCause() == EntityDamageEvent.DamageCause.PROJECTILE)
+            if (dmgEvent.getCause() == EntityDamageEvent.DamageCause.PROJECTILE) {
                 attacker = ((Projectile) attacker).getShooter();
-            if (attacker instanceof Player)
+            }
+            if (attacker instanceof Player) {
                 attackerName = ((Player) attacker).getName();
-            else
+            } else {
                 return;
+            }
         } else {
             return;
         }

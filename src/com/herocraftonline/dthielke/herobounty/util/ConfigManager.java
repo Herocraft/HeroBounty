@@ -1,16 +1,14 @@
 package com.herocraftonline.dthielke.herobounty.util;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.logging.Level;
-
-import org.bukkit.util.config.Configuration;
-
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyFileHandler;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.io.*;
+import java.util.logging.Level;
 
 public class ConfigManager {
 
@@ -28,10 +26,17 @@ public class ConfigManager {
     public void load() {
         checkConfig(primaryConfigFile);
         checkConfig(bountyConfigFile);
-        
-        Configuration config = new Configuration(primaryConfigFile);
-        config.load();
-        
+
+        FileConfiguration config = new YamlConfiguration();
+        try {
+            config.load(primaryConfigFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InvalidConfigurationException e) {
+            e.printStackTrace();
+        }
+        config.options().copyDefaults(true);
+
         BountyManager bountyManager = plugin.getBountyManager();
         bountyManager.setBounties(BountyFileHandler.load(new File(plugin.getDataFolder(), "data.yml")));
         bountyManager.setMinimumValue(config.getInt("bounty-min", 20));
@@ -68,7 +73,7 @@ public class ConfigManager {
             }
         }
     }
-    
+
     public boolean shouldRespectUntargettables() {
         return respectUntargettables;
     }

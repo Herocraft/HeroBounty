@@ -10,15 +10,13 @@ package com.herocraftonline.dthielke.herobounty;
 
 import com.herocraftonline.dthielke.herobounty.bounties.BountyFileHandler;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
-import com.herocraftonline.dthielke.herobounty.command.CommandManager;
+import com.herocraftonline.dthielke.herobounty.command.CommandHandler;
 import com.herocraftonline.dthielke.herobounty.command.commands.*;
 import com.herocraftonline.dthielke.herobounty.util.ConfigManager;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.event.Event.Type;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -31,7 +29,7 @@ public class HeroBounty extends JavaPlugin {
 
     private static final Logger log = Logger.getLogger("Minecraft");
     private HeroBountyEntityListener entityListener;
-    private CommandManager commandManager;
+    private CommandHandler commandHandler;
     private BountyManager bountyManager;
     private ConfigManager configManager;
 
@@ -42,8 +40,8 @@ public class HeroBounty extends JavaPlugin {
         return bountyManager;
     }
 
-    public CommandManager getCommandManager() {
-        return commandManager;
+    public CommandHandler getCommandHandler() {
+        return commandHandler;
     }
 
     public void log(Level level, String log) {
@@ -52,7 +50,7 @@ public class HeroBounty extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        return commandManager.dispatch(sender, command, label, args);
+        return commandHandler.dispatch(sender, label, args);
     }
 
     @Override
@@ -108,21 +106,21 @@ public class HeroBounty extends JavaPlugin {
     }
 
     private void registerCommands() {
-        commandManager = new CommandManager();
-        commandManager.addCommand(new HelpCommand(this));
-        commandManager.addCommand(new ListCommand(this));
-        commandManager.addCommand(new ViewCommand(this));
-        commandManager.addCommand(new AcceptCommand(this));
-        commandManager.addCommand(new AbandonCommand(this));
-        commandManager.addCommand(new NewCommand(this));
-        commandManager.addCommand(new CancelCommand(this));
-        commandManager.addCommand(new LocateCommand(this));
+        commandHandler = new CommandHandler();
+        commandHandler.addCommand(new HelpCommand(this));
+        commandHandler.addCommand(new ListCommand(this));
+        commandHandler.addCommand(new ViewCommand(this));
+        commandHandler.addCommand(new AcceptCommand(this));
+        commandHandler.addCommand(new AbandonCommand(this));
+        commandHandler.addCommand(new NewCommand(this));
+        commandHandler.addCommand(new CancelCommand(this));
+        commandHandler.addCommand(new LocateCommand(this));
     }
 
     private void registerEvents() {
         entityListener = new HeroBountyEntityListener(this);
         PluginManager pluginManager = getServer().getPluginManager();
-        pluginManager.registerEvent(Type.ENTITY_DEATH, entityListener, Priority.Normal, this);
+        pluginManager.registerEvents(entityListener, this);
     }
 
 }
