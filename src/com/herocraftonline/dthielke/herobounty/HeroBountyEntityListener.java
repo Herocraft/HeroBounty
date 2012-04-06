@@ -41,7 +41,7 @@ public class HeroBountyEntityListener implements Listener {
         String attackerName;
         if (dmgEvent instanceof EntityDamageByEntityEvent) {
             Entity attacker = ((EntityDamageByEntityEvent) dmgEvent).getDamager();
-            if (dmgEvent.getCause() == EntityDamageEvent.DamageCause.PROJECTILE) {
+            if (attacker instanceof Projectile) {
                 attacker = ((Projectile) attacker).getShooter();
             }
             if (attacker instanceof Player) {
