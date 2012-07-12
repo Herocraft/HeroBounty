@@ -1,5 +1,5 @@
 name: HeroBounty
-version: 1.9.2
+version: 1.9.3
 author: DThielke
 main: com.herocraftonline.dthielke.herobounty.HeroBounty
 description: Provides a bounty system with Vault support

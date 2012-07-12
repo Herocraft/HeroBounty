@@ -5,6 +5,8 @@ import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.BasicCommand;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
+
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -30,8 +32,18 @@ public class AcceptCommand extends BasicCommand {
         String hunterName = hunter.getName();
 
         BountyManager bountyMngr = plugin.getBountyManager();
-        Player target = plugin.getServer().getPlayer(args[0]);
-
+        Player target;
+        if (bountyMngr.usesAnonymousTargets()) {
+            try {
+                int num = Integer.parseInt(args[0]);
+                target = Bukkit.getPlayer(bountyMngr.getBounties().get(num).getTarget());
+            } catch (NumberFormatException e) {
+                Messaging.send(sender, "Bounty not found.");
+                return true;
+            }
+        } else {
+            target = Bukkit.getPlayer(args[0]);
+        }
         if (target == null) {
             Messaging.send(hunter, "Player not found.");
             return true;
