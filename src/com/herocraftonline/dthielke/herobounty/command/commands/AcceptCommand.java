@@ -35,7 +35,10 @@ public class AcceptCommand extends BasicCommand {
         Player target;
         if (bountyMngr.usesAnonymousTargets()) {
             try {
-                int num = Integer.parseInt(args[0]);
+                int num = Integer.parseInt(args[0]) - 1;
+                if (num < 0) {
+                    num = 0;
+                }
                 target = Bukkit.getPlayer(bountyMngr.getBounties().get(num).getTarget());
             } catch (NumberFormatException e) {
                 Messaging.send(sender, "Bounty not found.");
