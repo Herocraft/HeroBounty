@@ -61,7 +61,7 @@ public class ListCommand extends BasicCommand {
                     sender.sendMessage("§cAvailable Bounties (Page §f#" + currentPage + "§c of §f" + numPages + "§c):");
                     for (int i = pageStart; i <= pageEnd; i++) {
                         Bounty b = bounties.get(i);
-                        String msg = "§f" + (i + 1) + ". §e";
+                        String msg = "§f" + (i + 1) * currentPage + ". §e";
                         if (!plugin.getBountyManager().usesAnonymousTargets()) {
                             msg += b.getTarget() + "§f - §e";
                         }
