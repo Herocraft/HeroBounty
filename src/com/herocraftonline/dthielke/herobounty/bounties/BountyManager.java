@@ -5,11 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.TimerTask;
 
-import net.minecraft.server.NBTTagCompound;
-
-import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
@@ -82,19 +78,9 @@ public class BountyManager {
 
         HeroBounty.economy.withdrawPlayer(target.getName(), bounty.getDeathPenalty());
         HeroBounty.economy.depositPlayer(hunter.getName(), bounty.getValue());
-        dropHeadOfTarget(target);
 
         Messaging.broadcast("$1 has collected a bounty on $2 for $3!", hunter.getDisplayName(), bounty.getTargetDisplayName(), HeroBounty.economy.format(bounty.getValue()));
         return true;
-    }
-    
-    private void dropHeadOfTarget(Player target) {
-        ItemStack headItem = new ItemStack(397, 1, (short) 3);
-        CraftItemStack craftHeadItem = new CraftItemStack(headItem);
-        NBTTagCompound craftHeadInfo = new NBTTagCompound();
-        craftHeadInfo.setString("SkullOwner", target.getName());
-        craftHeadItem.getHandle().tag = craftHeadInfo;
-        target.getWorld().dropItem(target.getLocation(), headItem);
     }
     
     public Bounty getBountyOn(Player player) {

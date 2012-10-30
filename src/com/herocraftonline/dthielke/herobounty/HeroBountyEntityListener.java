@@ -9,6 +9,11 @@
 package com.herocraftonline.dthielke.herobounty;
 
 import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
+
+import net.minecraft.server.ItemStack;
+import net.minecraft.server.NBTTagCompound;
+
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -59,8 +64,17 @@ public class HeroBountyEntityListener implements Listener {
 
             if (b.getTarget().equalsIgnoreCase(defenderName) && b.isHunter(attackerName)) {
                 plugin.getBountyManager().completeBounty(i, attackerName);
+                event.getDrops().add(getHeadOfDefender(defenderName));
                 return;
             }
         }
+    }
+
+    private CraftItemStack getHeadOfDefender(String defenderName) {
+        CraftItemStack craftHeadItem = new CraftItemStack(397, 1, (short) 0, (byte) 3);
+        ItemStack headItem = craftHeadItem.getHandle();
+        headItem.tag = new NBTTagCompound();
+        headItem.tag.setString("SkullOwner", defenderName);
+        return craftHeadItem;
     }
 }
