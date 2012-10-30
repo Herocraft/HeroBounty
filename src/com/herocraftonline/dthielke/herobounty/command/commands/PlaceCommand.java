@@ -10,15 +10,15 @@ import org.bukkit.entity.Player;
 import java.util.Collections;
 import java.util.List;
 
-public class NewCommand extends BasicCommand {
+public class PlaceCommand extends BasicCommand {
     private final HeroBounty plugin;
 
-    public NewCommand(HeroBounty plugin) {
-        super("New");
-        setDescription("Creates a new bounty for a fee");
-        setUsage("§e/bounty new §9<target> <value>");
+    public PlaceCommand(HeroBounty plugin) {
+        super("Place");
+        setDescription("Places a bounty for a fee");
+        setUsage("§e/bounty place §9<target> <value>");
         setArgumentRange(2, 2);
-        setIdentifiers("bounty new");
+        setIdentifiers("bounty place");
         this.plugin = plugin;
     }
 
@@ -31,7 +31,7 @@ public class NewCommand extends BasicCommand {
             if (target != null) {
                 String targetName = target.getName();
                 if (target != owner) {
-                    if (HeroBounty.permission.playerHas(owner, "herobounty.new")) {
+                    if (HeroBounty.permission.playerHas(owner, "herobounty.new") || HeroBounty.permission.playerHas(owner, "herobounty.place")) {
                         if (!HeroBounty.permission.playerHas(target, "herobounty.untargettable")) {
                             List<Bounty> bounties = plugin.getBountyManager().getBounties();
                             for (Bounty b : bounties) {
