@@ -112,7 +112,7 @@ public class HeroBounty extends JavaPlugin {
         commandHandler.addCommand(new ViewCommand(this));
         commandHandler.addCommand(new AcceptCommand(this));
         commandHandler.addCommand(new AbandonCommand(this));
-        commandHandler.addCommand(new NewCommand(this));
+        commandHandler.addCommand(new PlaceCommand(this));
         commandHandler.addCommand(new CancelCommand(this));
         commandHandler.addCommand(new LocateCommand(this));
     }
