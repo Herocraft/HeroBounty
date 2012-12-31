@@ -57,7 +57,7 @@ public class BountyManager {
 
     public void startExpirationTimer() {
         TimerTask expirationChecker = new ExpirationChecker(plugin);
-        plugin.getServer().getScheduler().scheduleAsyncRepeatingTask(plugin, expirationChecker, EXPIRATION_DELAY, EXPIRATION_PERIOD);
+        plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, expirationChecker, EXPIRATION_DELAY, EXPIRATION_PERIOD);
     }
 
     public void stopExpirationTimer() {
