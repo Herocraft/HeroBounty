@@ -10,10 +10,7 @@ package com.herocraftonline.dthielke.herobounty;
 
 import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
 
-import net.minecraft.server.ItemStack;
-import net.minecraft.server.NBTTagCompound;
-
-import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -23,6 +20,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.List;
 
@@ -70,11 +69,11 @@ public class HeroBountyEntityListener implements Listener {
         }
     }
 
-    private CraftItemStack getHeadOfDefender(String defenderName) {
-        CraftItemStack craftHeadItem = new CraftItemStack(397, 1, (short) 0, (byte) 3);
-        ItemStack headItem = craftHeadItem.getHandle();
-        headItem.tag = new NBTTagCompound();
-        headItem.tag.setString("SkullOwner", defenderName);
-        return craftHeadItem;
+    private ItemStack getHeadOfDefender(String defenderName) {
+        ItemStack skullItem = new ItemStack(Material.SKULL_ITEM, 1, (short) 3);
+        SkullMeta skullMeta = (SkullMeta) skullItem.getItemMeta();
+        skullMeta.setOwner(defenderName);
+        skullItem.setItemMeta(skullMeta);
+        return skullItem;
     }
 }
