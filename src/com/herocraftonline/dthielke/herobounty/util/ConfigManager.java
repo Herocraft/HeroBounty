@@ -43,6 +43,7 @@ public class ConfigManager {
         bountyManager.setPlacementFee(config.getInt("bounty-fee-percent", 10) / 100f);
         bountyManager.setContractFee(config.getInt("contract-fee-percent", 5) / 100f);
         bountyManager.setDeathFee(config.getInt("death-penalty-percent", 5) / 100f);
+        bountyManager.setCancellationFee(config.getDouble("cancellation-fee-percent", 5) / 100f);
         bountyManager.setDuration(config.getInt("bounty-duration", 24 * 60));
         bountyManager.setAnonymousTargets(config.getBoolean("anonymous-targets", false));
         bountyManager.setPayInconvenience(config.getBoolean("pay-inconvenience", true));

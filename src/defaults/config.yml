@@ -11,6 +11,9 @@ contract-fee-percent: 5
 #percent of the award value that the killed target loses
 death-penalty-percent: 5
 
+#percent of the award value that taken as a cancellation fee
+cancellation-fee-percent: 5
+
 #the amount of time bounty hunters have to complete a bounty (in minutes)
 bounty-duration: 1440
 
