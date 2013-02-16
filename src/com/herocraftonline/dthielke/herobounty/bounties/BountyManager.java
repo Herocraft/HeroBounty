@@ -21,6 +21,7 @@ public class BountyManager {
     private double placementFee;
     private double contractFee;
     private double deathFee;
+    private double cancellationFee;
     private boolean payInconvenience;
     private boolean anonymousTargets;
     private int duration;
@@ -157,6 +158,14 @@ public class BountyManager {
 
     public void setDeathFee(double deathFee) {
         this.deathFee = deathFee;
+    }
+
+    public double getCancellationFee() {
+        return cancellationFee;
+    }
+
+    public void setCancellationFee(double cancellationFee) {
+        this.cancellationFee = cancellationFee;
     }
 
     public boolean shouldPayInconvenience() {
