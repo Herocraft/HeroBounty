@@ -5,6 +5,7 @@ import com.herocraftonline.dthielke.herobounty.bounties.Bounty;
 import com.herocraftonline.dthielke.herobounty.bounties.BountyManager;
 import com.herocraftonline.dthielke.herobounty.command.BasicInteractiveCommand;
 import com.herocraftonline.dthielke.herobounty.command.BasicInteractiveCommandState;
+import com.herocraftonline.dthielke.herobounty.command.InteractiveCommandState;
 import com.herocraftonline.dthielke.herobounty.util.Messaging;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -21,6 +22,7 @@ public class CancelCommand extends BasicInteractiveCommand {
         setDescription("Cancels a previously posted bounty");
         setUsage("§e/bounty cancel §9<target>");
         this.plugin = plugin;
+        this.setStates(new InteractiveCommandState[] { new StateA(), new StateB() });
     }
 
     @Override
@@ -51,23 +53,25 @@ public class CancelCommand extends BasicInteractiveCommand {
 
                 if (!bountyMngr.isTarget(args[0])) {
                     Messaging.send(owner, "Bounty not found.");
-                    return true;
+                    return false;
                 }
 
                 Bounty bounty = bountyMngr.getBountyOn(args[0]);
                 if (!bounty.isOwner(owner)) {
                     Messaging.send(owner, "You don't own this bounty.");
-                    return true;
+                    return false;
                 }
 
                 int cancellationFee = (int) ((bounty.getValue() + bounty.getPostingFee()) * bountyMngr.getCancellationFee());
 
                 if (cancellationFee > 0) {
-                    Messaging.send(owner, "You will be charged with a $1 cancellation fee.", HeroBounty.economy.format(cancellationFee));
+                    Messaging.send(owner, "You will be charged with cancellation fee of $1.", HeroBounty.economy.format(cancellationFee));
                 }
+                pendingCancellations.put(owner, bounty);
                 Messaging.send(owner, "Please §8/bounty cancel confirm §7or §8/bounty cancel abort §7this cancellation.");
+                return true;
             }
-            return true;
+            return false;
         }
     }
 
@@ -75,7 +79,7 @@ public class CancelCommand extends BasicInteractiveCommand {
         
         public StateB() {
             super("bounty cancel confirm");
-            setArgumentRange(1, 1);
+            setArgumentRange(0, 0);
         }
 
         public boolean execute(CommandSender sender, String identifier, String[] args) {
@@ -113,8 +117,9 @@ public class CancelCommand extends BasicInteractiveCommand {
                 }
     
                 plugin.saveData();
+                return true;
             }
-            return true;
+            return false;
         }
     }
 }

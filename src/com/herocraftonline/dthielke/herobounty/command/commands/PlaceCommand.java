@@ -42,7 +42,7 @@ public class PlaceCommand extends BasicInteractiveCommand {
 
         public StateA() {
             super("bounty place");
-            setArgumentRange(0, 0);
+            setArgumentRange(2, 2);
         }
 
         @Override
@@ -60,7 +60,7 @@ public class PlaceCommand extends BasicInteractiveCommand {
                                 for (Bounty b : bounties) {
                                     if (b.getTarget().equalsIgnoreCase(targetName)) {
                                         Messaging.send(owner, "There is already a bounty on $1.", targetName);
-                                        return true;
+                                        return false;
                                     }
                                 }
 
@@ -72,7 +72,7 @@ public class PlaceCommand extends BasicInteractiveCommand {
                                     }
                                 } catch (NumberFormatException e) {
                                     Messaging.send(owner, "Value must be greater than $1.", String.valueOf(plugin.getBountyManager().getMinimumValue()));
-                                    return true;
+                                    return false;
                                 }
                                 if (HeroBounty.economy.getBalance(ownerName) >= value) {
                                     int postingFee = (int) (plugin.getBountyManager().getPlacementFee() * value);
@@ -87,6 +87,7 @@ public class PlaceCommand extends BasicInteractiveCommand {
                                         Messaging.send(executor, "This bounty has a cancellation fee of $1", HeroBounty.economy.format(cancellationFee));
                                     }
                                     Messaging.send(executor, "Please §8/bounty place confirm §7or §8/bounty place abort §7this placement.");
+                                    return true;
                                 } else {
                                     Messaging.send(owner, "You don't have enough funds to do that.");
                                 }
@@ -103,7 +104,7 @@ public class PlaceCommand extends BasicInteractiveCommand {
                     Messaging.send(owner, "Target player not found.");
                 }
             }
-            return true;
+            return false;
         }
     }
 
@@ -111,7 +112,7 @@ public class PlaceCommand extends BasicInteractiveCommand {
 
         public StateB() {
             super("bounty place confirm");
-            this.setArgumentRange(1, 1);
+            this.setArgumentRange(0, 0);
         }
 
         @Override
@@ -131,13 +132,14 @@ public class PlaceCommand extends BasicInteractiveCommand {
                     Messaging.broadcast("A new bounty has been placed for $1.", HeroBounty.economy.format(bounty.getValue()));
     
                     plugin.saveData();
+                    return true;
                 }
                 else {
                     Messaging.send(executor, "You don't have enough funds to do that.");
                     cancelInteraction(executor);
                 }
             }
-            return true;
+            return false;
         }
     }
 }
