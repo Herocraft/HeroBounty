@@ -17,6 +17,9 @@ cancellation-fee-percent: 5
 #the amount of time bounty hunters have to complete a bounty (in minutes)
 bounty-duration: 1440
 
+#the amount of time before a bounty can be accepted (in minutes)
+bounty-accept-delay: 15
+
 #if true, hides the target names until a bounty is accepted
 anonymous-targets: false
 

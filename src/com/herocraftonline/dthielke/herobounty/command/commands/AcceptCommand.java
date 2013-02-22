@@ -78,6 +78,11 @@ public class AcceptCommand extends BasicCommand {
             return true;
         }
 
+        if (!bountyMngr.isAcceptDelayDone(bounty)) {
+            Messaging.send(hunter, "You cannot accept this bounty until $1", bountyMngr.getAcceptDelayDate(bounty).toString());
+            return true;
+        }
+
         int contractFee = bounty.getContractFee();
         if (HeroBounty.economy.getBalance(hunterName) < contractFee) {
             Messaging.send(hunter, "You don't have enough funds.");

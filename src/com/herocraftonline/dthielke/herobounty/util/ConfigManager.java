@@ -45,6 +45,7 @@ public class ConfigManager {
         bountyManager.setDeathFee(config.getInt("death-penalty-percent", 5) / 100f);
         bountyManager.setCancellationFee(config.getDouble("cancellation-fee-percent", 5) / 100f);
         bountyManager.setDuration(config.getInt("bounty-duration", 24 * 60));
+        bountyManager.setAcceptDelay(config.getInt("bounty-accept-delay", 5));
         bountyManager.setAnonymousTargets(config.getBoolean("anonymous-targets", false));
         bountyManager.setPayInconvenience(config.getBoolean("pay-inconvenience", true));
         bountyManager.setLocationRounding(config.getInt("location-rounding", 100));

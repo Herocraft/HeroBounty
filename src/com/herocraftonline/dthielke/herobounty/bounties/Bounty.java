@@ -30,6 +30,7 @@ public class Bounty implements Comparable<Bounty> {
     private int postingFee = 0;
     private int deathPenalty = 0;
     private int contractFee = 0;
+    private Date creationDate;
 
     public Bounty() {}
 
@@ -42,6 +43,7 @@ public class Bounty implements Comparable<Bounty> {
         this.setPostingFee(postingFee);
         this.contractFee = contractFee;
         this.deathPenalty = deathPenalty;
+        this.creationDate = new Date();
     }
     
     public void addHunter(Player player) {
@@ -218,5 +220,13 @@ public class Bounty implements Comparable<Bounty> {
 
     public Point2D getTargetLocation() {
         return targetLocation;
+    }
+
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
+    }
+
+    public Date getCreationDate() {
+        return this.creationDate;
     }
 }
