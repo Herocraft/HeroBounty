@@ -1,10 +1,13 @@
 package com.herocraftonline.dthielke.herobounty.bounties;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.TimerTask;
 
+import org.apache.commons.lang.time.DateUtils;
 import org.bukkit.entity.Player;
 
 import com.herocraftonline.dthielke.herobounty.HeroBounty;
@@ -26,6 +29,7 @@ public class BountyManager {
     private boolean anonymousTargets;
     private int duration;
     private int locationRounding;
+    private int acceptDelay;
 
     public BountyManager(HeroBounty plugin) {
         this.plugin = plugin;
@@ -192,6 +196,14 @@ public class BountyManager {
         this.duration = duration;
     }
 
+    public int getAcceptDelay() {
+        return acceptDelay;
+    }
+
+    public void setAcceptDelay(int acceptDelay) {
+        this.acceptDelay = acceptDelay;
+    }
+
     public int getLocationRounding() {
         return locationRounding;
     }
@@ -233,5 +245,13 @@ public class BountyManager {
         public void setPlugin(HeroBounty plugin) {
             this.plugin = plugin;
         }
+    }
+
+    public boolean isAcceptDelayDone(Bounty bounty) {
+        return Calendar.getInstance().getTime().after(getAcceptDelayDate(bounty));
+    }
+
+    public Date getAcceptDelayDate(Bounty bounty) {
+        return DateUtils.addMinutes(bounty.getCreationDate(), acceptDelay);
     }
 }
