@@ -252,6 +252,10 @@ public class BountyManager {
     }
 
     public Date getAcceptDelayDate(Bounty bounty) {
-        return DateUtils.addMinutes(bounty.getCreationDate(), acceptDelay);
+        if (bounty.getCreationDate() != null) {
+            return DateUtils.addMinutes(bounty.getCreationDate(), acceptDelay);
+        }
+
+        return DateUtils.addMinutes(new Date(), -acceptDelay);
     }
 }
