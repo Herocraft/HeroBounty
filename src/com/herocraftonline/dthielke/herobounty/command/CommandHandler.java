@@ -47,7 +47,7 @@ public class CommandHandler {
             }
 
             if (!cmd.getPermission().isEmpty() && !sender.hasPermission(cmd.getPermission())) {
-                Messaging.send(sender, "Insufficient permission.");
+                Messaging.send(sender, "§7[§eBounty§7] Insufficient permission.");
                 return true;
             }
 

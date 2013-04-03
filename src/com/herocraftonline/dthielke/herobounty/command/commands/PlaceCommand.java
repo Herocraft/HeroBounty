@@ -59,7 +59,7 @@ public class PlaceCommand extends BasicInteractiveCommand {
                                 List<Bounty> bounties = plugin.getBountyManager().getBounties();
                                 for (Bounty b : bounties) {
                                     if (b.getTarget().equalsIgnoreCase(targetName)) {
-                                        Messaging.send(owner, "There is already a bounty on $1.", targetName);
+                                        Messaging.send(owner, "§7[§eBounty§7] There is already a bounty on $1.", targetName);
                                         return false;
                                     }
                                 }
@@ -71,7 +71,7 @@ public class PlaceCommand extends BasicInteractiveCommand {
                                         throw new NumberFormatException();
                                     }
                                 } catch (NumberFormatException e) {
-                                    Messaging.send(owner, "Value must be greater than $1.", String.valueOf(plugin.getBountyManager().getMinimumValue()));
+                                    Messaging.send(owner, "§7[§eBounty§7] Value must be greater than $1.", String.valueOf(plugin.getBountyManager().getMinimumValue()));
                                     return false;
                                 }
                                 if (HeroBounty.economy.getBalance(ownerName) >= value) {
@@ -84,24 +84,24 @@ public class PlaceCommand extends BasicInteractiveCommand {
                                     pendingBounties.put(executor, bounty);
                                     int cancellationFee = (int) (plugin.getBountyManager().getCancellationFee() * value);
                                     if (cancellationFee > 0) {
-                                        Messaging.send(executor, "This bounty has a cancellation fee of $1", HeroBounty.economy.format(cancellationFee));
+                                        Messaging.send(executor, "§7[§eBounty§7] This bounty has a cancellation fee of $1", HeroBounty.economy.format(cancellationFee));
                                     }
-                                    Messaging.send(executor, "Please §8/bounty place confirm §7or §8/bounty place abort §7this placement.");
+                                    Messaging.send(executor, "§7[§eBounty§7] §7Please §a/bounty place confirm §7or §c/bounty place abort §7this placement.");
                                     return true;
                                 } else {
-                                    Messaging.send(owner, "You don't have enough funds to do that.");
+                                    Messaging.send(owner, "§7[§eBounty§7] You don't have enough funds to do that.");
                                 }
                             } else {
-                                Messaging.send(owner, "This player can't be targetted.");
+                                Messaging.send(owner, "§7[§eBounty§7] This player can't be targetted.");
                             }
                         } else {
-                            Messaging.send(owner, "You don't have permission to create bounties.");
+                            Messaging.send(owner, "§7[§eBounty§7] You don't have permission to create bounties.");
                         }
                     } else {
-                        Messaging.send(owner, "You can't place a bounty on yourself.");
+                        Messaging.send(owner, "§7[§eBounty§7] You can't place a bounty on yourself.");
                     }
                 } else {
-                    Messaging.send(owner, "Target player not found.");
+                    Messaging.send(owner, "§7[§eBounty§7] Target player not found.");
                 }
             }
             return false;
@@ -127,15 +127,15 @@ public class PlaceCommand extends BasicInteractiveCommand {
                     Collections.sort(bounties);
     
                     HeroBounty.economy.withdrawPlayer(bounty.getOwner(), totalValue);
-                    Messaging.send(executor, "Placed a bounty on $1's head for $2.", bounty.getTarget(), HeroBounty.economy.format(bounty.getValue()));
-                    Messaging.send(executor, "You have been charged $1 for posting this bounty.", HeroBounty.economy.format(bounty.getPostingFee()));
-                    Messaging.broadcast("A new bounty has been placed for $1.", HeroBounty.economy.format(bounty.getValue()));
+                    Messaging.send(executor, "§7[§eBounty§7] Placed a bounty on $1's head for $2.", bounty.getTarget(), HeroBounty.economy.format(bounty.getValue()));
+                    Messaging.send(executor, "§7[§eBounty§7] You have been charged $1 for posting this bounty.", HeroBounty.economy.format(bounty.getPostingFee()));
+                    Messaging.broadcast("§7[§eBounty§7] A new bounty has been placed for $1.", HeroBounty.economy.format(bounty.getValue()));
     
                     plugin.saveData();
                     return true;
                 }
                 else {
-                    Messaging.send(executor, "You don't have enough funds to do that.");
+                    Messaging.send(executor, "§7[§eBounty§7] You don't have enough funds to do that.");
                     cancelInteraction(executor);
                 }
             }

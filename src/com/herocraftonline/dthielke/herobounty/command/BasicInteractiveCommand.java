@@ -40,7 +40,7 @@ public abstract class BasicInteractiveCommand extends BasicCommand implements In
 
         if (stateIndex > 0) {
             if (this.getCancelIdentifier().equalsIgnoreCase(identifier)) {
-                Messaging.send(executor, "Exiting command.");
+                Messaging.send(executor, "§7[§eBounty§7] Exiting command.");
                 userStates.remove(executor);
                 onCommandCancelled(executor);
                 return true;
@@ -49,7 +49,7 @@ public abstract class BasicInteractiveCommand extends BasicCommand implements In
 
         if (args.length < state.getMinArguments() || args.length > state.getMaxArguments() || !state.execute(executor, identifier, args)) {
             if (stateIndex > 0) {
-                Messaging.send(executor, "Invalid input - try again or type $1 to exit.", "/" + this.getCancelIdentifier());
+                Messaging.send(executor, "§7[§eBounty§7] Invalid input - try again or type $1 to exit.", "/" + this.getCancelIdentifier());
             }
         } else {
             stateIndex++;

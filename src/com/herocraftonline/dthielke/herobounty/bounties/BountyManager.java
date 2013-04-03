@@ -84,7 +84,7 @@ public class BountyManager {
         HeroBounty.economy.withdrawPlayer(target.getName(), bounty.getDeathPenalty());
         HeroBounty.economy.depositPlayer(hunter.getName(), bounty.getValue());
 
-        Messaging.broadcast("$1 has collected a bounty on $2 for $3!", hunter.getDisplayName(), bounty.getTargetDisplayName(), HeroBounty.economy.format(bounty.getValue()));
+        Messaging.broadcast("§7[§eBounty§7] §e$1 has collected a bounty on $2 for $3!", hunter.getDisplayName(), bounty.getTargetDisplayName(), HeroBounty.economy.format(bounty.getValue()));
         return true;
     }
     
@@ -235,7 +235,7 @@ public class BountyManager {
                         bounty.removeHunter(hunterName);
                         plugin.saveData();
                         if (hunter != null) {
-                            Messaging.send(hunter, "Your bounty on $1 has expired.", bounty.getTargetDisplayName());
+                            Messaging.send(hunter, "§7[§eBounty§7] §eYour bounty on $1 has expired.", bounty.getTargetDisplayName());
                         }
                     }
                 }
