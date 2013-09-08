@@ -16,6 +16,7 @@ public class ConfigManager {
     private File primaryConfigFile;
     private File bountyConfigFile;
     private boolean respectUntargettables;
+    private boolean dropHeads;
 
     public ConfigManager(HeroBounty plugin) {
         this.plugin = plugin;
@@ -49,6 +50,7 @@ public class ConfigManager {
         bountyManager.setAnonymousTargets(config.getBoolean("anonymous-targets", false));
         bountyManager.setPayInconvenience(config.getBoolean("pay-inconvenience", true));
         bountyManager.setLocationRounding(config.getInt("location-rounding", 100));
+        bountyManager.setDropHeads(config.getBoolean("drop-heads", true));
         respectUntargettables = config.getBoolean("respect-untargettables", true);
     }
 
@@ -79,5 +81,4 @@ public class ConfigManager {
     public boolean shouldRespectUntargettables() {
         return respectUntargettables;
     }
-
 }

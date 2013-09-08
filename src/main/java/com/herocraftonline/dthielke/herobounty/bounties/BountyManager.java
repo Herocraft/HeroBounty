@@ -30,6 +30,7 @@ public class BountyManager {
     private int duration;
     private int locationRounding;
     private int acceptDelay;
+    private boolean dropHeads;
 
     public BountyManager(HeroBounty plugin) {
         this.plugin = plugin;
@@ -257,5 +258,14 @@ public class BountyManager {
         }
 
         return DateUtils.addMinutes(new Date(), -acceptDelay);
+    }
+
+    public boolean isDropHeads() {
+        return dropHeads;
+    }
+
+    public void setDropHeads(boolean dropHeads)
+    {
+        this.dropHeads = dropHeads;
     }
 }

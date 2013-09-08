@@ -63,9 +63,16 @@ public class HeroBountyEntityListener implements Listener {
 
             if (b.getTarget().equalsIgnoreCase(defenderName) && b.isHunter(attackerName)) {
                 plugin.getBountyManager().completeBounty(i, attackerName);
-                event.getDrops().add(getHeadOfDefender(defenderName));
+                addHeadOfDefender(event.getDrops(), defenderName);
                 return;
             }
+        }
+    }
+
+    private void addHeadOfDefender(List<ItemStack> drops, String defenderName)
+    {
+        if (plugin.getBountyManager().isDropHeads()) {
+            drops.add(getHeadOfDefender(defenderName));
         }
     }
 

@@ -28,3 +28,6 @@ pay-inconvenience: true
 
 #round locations displayed by the /bounty locate command to the nearest location-rounding
 location-rounding: 100
+
+#if true, drop player heads
+drop-heads: true
