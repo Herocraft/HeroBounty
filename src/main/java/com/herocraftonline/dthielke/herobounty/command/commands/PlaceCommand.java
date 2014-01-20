@@ -9,6 +9,7 @@ import com.herocraftonline.dthielke.herobounty.util.Messaging;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.metadata.MetadataValue;
 
 import java.util.Collections;
 import java.util.Hashtable;
@@ -51,7 +52,7 @@ public class PlaceCommand extends BasicInteractiveCommand {
                 Player owner = (Player) executor;
                 String ownerName = owner.getName();
                 Player target = plugin.getServer().getPlayer(args[0]);
-                if (target != null) {
+                if (target != null && !isVanished(target)) {
                     String targetName = target.getName();
                     if (target != owner) {
                         if (HeroBounty.permission.playerHas(owner, "herobounty.new") || HeroBounty.permission.playerHas(owner, "herobounty.place")) {
@@ -103,6 +104,15 @@ public class PlaceCommand extends BasicInteractiveCommand {
                 } else {
                     Messaging.send(owner, "§7[§eBounty§7] Target player not found.");
                 }
+            }
+            return false;
+        }
+
+        private boolean isVanished(Player player) {
+            for (MetadataValue value : player.getMetadata("vanished")) {
+                Object vanished = value.value();
+                if(vanished instanceof Boolean && (Boolean)vanished)
+                    return true;
             }
             return false;
         }
